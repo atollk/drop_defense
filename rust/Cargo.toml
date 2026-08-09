@@ -1,0 +1,9 @@
+[package]
+name = "drop_defense"
+version = "0.1.0"
+edition = "2024"
+
+crate-type = ["cdylib"]  # Compile this crate to a dynamic C library.
+
+[dependencies]
+godot = "0.5.5"

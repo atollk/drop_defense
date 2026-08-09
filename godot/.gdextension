@@ -1,0 +1,15 @@
+[configuration]
+entry_symbol = "gdext_rust_init"
+compatibility_minimum = 4.1
+reloadable = true
+
+[libraries]
+linux.debug.x86_64 =     "res://../rust/target/debug/libdrop_defense.so"
+linux.release.x86_64 =   "res://../rust/target/release/libdrop_defense.so"
+windows.debug.x86_64 =   "res://../rust/target/debug/drop_defense.dll"
+windows.release.x86_64 = "res://../rust/target/release/drop_defense.dll"
+macos.debug =            "res://../rust/target/debug/libdrop_defense.dylib"
+macos.release =          "res://../rust/target/release/libdrop_defense.dylib"
+macos.debug.arm64 =      "res://../rust/target/debug/libdrop_defense.dylib"
+macos.release.arm64 =    "res://../rust/target/release/libdrop_defense.dylib"
+
