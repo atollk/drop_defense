@@ -1,4 +1,3 @@
-
 #[macro_export]
 macro_rules! get_node {
     ($typ:ty, $name:literal) => {

@@ -1,5 +1,5 @@
-mod scene_game;
 mod enemy;
+mod scene_game;
 pub mod util;
 
 use godot::prelude::*;
