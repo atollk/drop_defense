@@ -1,4 +1,4 @@
-use crate::get_node;
+use crate::node_getter;
 use godot::classes::{CollisionShape2D, IRigidBody2D, RigidBody2D, Sprite2D};
 use godot::prelude::*;
 
@@ -9,7 +9,7 @@ struct Enemy {
 }
 
 impl Enemy {
-    get_node!(CollisionShape2D, "CollisionShape2D");
+    node_getter!(CollisionShape2D, "CollisionShape2D");
 }
 
 #[godot_api]

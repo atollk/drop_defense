@@ -11,6 +11,7 @@ config_version=5
 [application]
 
 config/name="drop_defense"
+run/main_scene="uid://3aclf3mxpivk"
 config/features=PackedStringArray("4.7", "GL Compatibility")
 config/icon="res://icon.svg"
 
