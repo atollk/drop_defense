@@ -6,7 +6,10 @@
 [node name="RootMain" type="Node" unique_id=205469389]
 
 [node name="SceneGame" parent="." unique_id=741901120 instance=ExtResource("1_npfhg")]
-position = Vector2(-357, -224)
 
-[node name="Enemy" parent="." unique_id=1348770778 instance=ExtResource("2_iggpw")]
-position = Vector2(323, 220)
+[node name="Enemy" parent="." unique_id=1348770778 node_paths=PackedStringArray("path_follow") instance=ExtResource("2_iggpw")]
+path_follow = NodePath("../SceneGame/Path2D/PathFollow2D")
+position = Vector2(623, 497)
+scale = Vector2(1, 1)
+
+[editable path="SceneGame"]
