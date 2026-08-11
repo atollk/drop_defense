@@ -7,6 +7,7 @@ name = "drop_defense"
 version = "0.1.0"
 dependencies = [
  "godot",
+ "paste",
 ]
 
 [[package]]
@@ -121,6 +122,12 @@ name = "nanoserde-derive"
 version = "0.2.1"
 source = "registry+https://github.com/rust-lang/crates.io-index"
 checksum = "a846cbc04412cf509efcd8f3694b114fc700a035fb5a37f21517f9fb019f1ebc"
+
+[[package]]
+name = "paste"
+version = "1.0.15"
+source = "registry+https://github.com/rust-lang/crates.io-index"
+checksum = "57c0d7b74b563b49d38dae00a0c37d4d6de9b432382b2892f0574ddcae73fd0a"
 
 [[package]]
 name = "proc-macro2"

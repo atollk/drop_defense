@@ -1,0 +1,3 @@
+[gd_scene format=3 uid="uid://bmqpde5ecmmsg"]
+
+[node name="Enemy" type="Enemy" unique_id=1348770778]

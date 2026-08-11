@@ -1,0 +1,3 @@
+[toolchain]
+channel = "stable"  # when you change this, remember to also change the path in the workspace settings.json
+components = [ "rust-analyzer", "rust-src" ]
