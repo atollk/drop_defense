@@ -1,8 +1,5 @@
 use crate::node_getter;
-use godot::classes::{
-    CollisionShape2D, IPath2D, IRigidBody2D, Path2D, PathFollow2D, RigidBody2D, Sprite2D,
-};
-use godot::global::print;
+use godot::classes::{AnimatedSprite2D, CollisionShape2D, IRigidBody2D, PathFollow2D, RigidBody2D};
 use godot::prelude::*;
 
 #[derive(GodotClass)]
@@ -16,6 +13,21 @@ struct Enemy {
 
 impl Enemy {
     node_getter!(CollisionShape2D, "CollisionShape2D");
+    node_getter!(AnimatedSprite2D, "AnimatedSprite2D");
+
+    fn get_all_children(&self) -> impl Iterator<Item = Gd<Node2D>> {
+        [
+            self.get_node_animated_sprite2_d().upcast::<Node2D>(),
+            self.get_node_collision_shape2_d().upcast(),
+        ]
+        .into_iter()
+    }
+
+    pub fn set_scale(&mut self, scale: Vector2) {
+        for mut child in self.get_all_children() {
+            child.set_scale(scale);
+        }
+    }
 }
 
 #[godot_api]
