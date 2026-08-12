@@ -42,17 +42,16 @@ animations = [{
 radius = 73.0
 height = 310.0
 
-[node name="Enemy" type="Node2D" unique_id=1005797366]
+[node name="Enemy" type="Enemy" unique_id=1915612589]
+freeze = true
 
-[node name="RigidBody2D" type="RigidBody2D" parent="." unique_id=953165453]
-
-[node name="AnimatedSprite2D" type="AnimatedSprite2D" parent="RigidBody2D" unique_id=1570912286]
+[node name="AnimatedSprite2D" type="AnimatedSprite2D" parent="." unique_id=1570912286]
 position = Vector2(0.593523, -156.90648)
 sprite_frames = SubResource("SpriteFrames_q3jpm")
 autoplay = "default"
 frame = 3
 frame_progress = 0.8407129
 
-[node name="CollisionShape2D" type="CollisionShape2D" parent="RigidBody2D" unique_id=1666332256]
+[node name="CollisionShape2D" type="CollisionShape2D" parent="." unique_id=1666332256]
 position = Vector2(0.593523, -156.90648)
 shape = SubResource("CapsuleShape2D_vh74b")

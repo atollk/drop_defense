@@ -1,5 +1,4 @@
-use crate::node_getter;
-use godot::classes::{AnimatedSprite2D, CollisionShape2D, IRigidBody2D, PathFollow2D, RigidBody2D};
+use godot::classes::{IRigidBody2D, PathFollow2D, RigidBody2D};
 use godot::prelude::*;
 
 #[derive(GodotClass)]
@@ -12,21 +11,28 @@ struct Enemy {
 }
 
 impl Enemy {
-    node_getter!(CollisionShape2D, "CollisionShape2D");
-    node_getter!(AnimatedSprite2D, "AnimatedSprite2D");
-
-    fn get_all_children(&self) -> impl Iterator<Item = Gd<Node2D>> {
-        [
-            self.get_node_animated_sprite2_d().upcast::<Node2D>(),
-            self.get_node_collision_shape2_d().upcast(),
-        ]
-        .into_iter()
+    pub fn set_scale(&mut self, scale: Vector2) {
+        for child in self.base().get_children().iter_shared() {
+            if let Ok(mut child) = child.try_cast::<Node2D>() {
+                let old_scale = child.get_scale();
+                child.set_scale(scale);
+                let new_position = child.get_position() * scale / old_scale;
+                child.set_position(new_position);
+            }
+        }
     }
 
-    pub fn set_scale(&mut self, scale: Vector2) {
-        for mut child in self.get_all_children() {
-            child.set_scale(scale);
-        }
+    fn update_path_progress(&mut self, delta: f64) {
+        self.progress += delta / 20.;
+        let new_position = {
+            let path = self
+                .path_follow
+                .as_mut()
+                .expect("Enemy.path must be provided");
+            path.set_progress_ratio(self.progress as f32);
+            path.get_position()
+        };
+        self.base_mut().set_position(new_position);
     }
 }
 
@@ -41,16 +47,7 @@ impl IRigidBody2D for Enemy {
     }
 
     fn process(&mut self, delta: f64) {
-        self.progress += delta / 20.;
-        godot_print!("{}", self.progress);
-        let new_position = {
-            let path = self
-                .path_follow
-                .as_mut()
-                .expect("Enemy.path must be provided");
-            path.set_progress_ratio(self.progress as f32);
-            path.get_position()
-        };
-        self.base_mut().set_position(new_position);
+        self.update_path_progress(delta);
+        self.set_scale(Vector2::new(0.5, 0.5));
     }
 }

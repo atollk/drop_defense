@@ -10,6 +10,5 @@
 [node name="Enemy" parent="." unique_id=1348770778 node_paths=PackedStringArray("path_follow") instance=ExtResource("2_iggpw")]
 path_follow = NodePath("../SceneGame/Path2D/PathFollow2D")
 position = Vector2(623, 497)
-scale = Vector2(1, 1)
 
 [editable path="SceneGame"]
