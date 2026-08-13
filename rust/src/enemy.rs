@@ -1,4 +1,5 @@
 use crate::node_getter;
+use godot::classes::input::CursorShape;
 use godot::classes::{
     CollisionShape2D, IRigidBody2D, Input, InputEvent, InputEventMouseMotion, PathFollow2D,
     RigidBody2D, StaticBody2D,
@@ -9,8 +10,15 @@ use godot::prelude::*;
 #[class(base=RigidBody2D)]
 struct Enemy {
     #[export]
+    /// A [PathFollow2D] node that the enemy will continuously move along while not dragged.
     path_follow: Option<Gd<PathFollow2D>>,
+
+    /// The progress (from 0 to 1) along [path_follow].
     progress: f64,
+
+    /// Whether the enemy is currently being dragged by the mouse.
+    is_dragging: bool,
+
     base: Base<RigidBody2D>,
 }
 
@@ -42,12 +50,35 @@ impl Enemy {
         self.base_mut().set_position(new_position);
     }
 
-    fn on_mouse_entered(&mut self) {
-        // TODO
+    fn on_mouse_entered(&mut self, entered: bool) {
+        godot_print!("on_mouse_entered: {}", entered);
+        let shape = if entered {
+            CursorShape::POINTING_HAND
+        } else {
+            CursorShape::ARROW
+        };
+        Input::singleton()
+            .set_default_cursor_shape_ex()
+            .shape(shape)
+            .done();
     }
 
-    fn on_mouse_exited(&mut self) {
-        // TODO
+    fn drag_towards_cursor(&mut self) {
+        if !self.is_dragging {
+            return;
+        }
+
+        const STIFFNESS: f32 = 400.; // how hard are we pulling
+        const DAMPING_RATIO: f32 = 0.9;
+        const MAX_FORCE: f32 = 8000.;
+
+        let local_mouse_pos = self.base().get_local_mouse_position();
+        let mass = self.base().get_mass();
+        let k = STIFFNESS * mass;
+        let c = 2. * DAMPING_RATIO * (k * mass).sqrt();
+        let force = local_mouse_pos * k - self.base().get_linear_velocity() * c;
+        self.base_mut()
+            .apply_central_force(force.limit_length(Some(MAX_FORCE)));
     }
 }
 
@@ -57,6 +88,7 @@ impl IRigidBody2D for Enemy {
         Enemy {
             path_follow: None,
             progress: 0.0,
+            is_dragging: false,
             base,
         }
     }
@@ -64,24 +96,21 @@ impl IRigidBody2D for Enemy {
     fn ready(&mut self) {
         self.set_scale(Vector2::new(0.5, 0.5));
 
-        // TODO
-        /*self.base()
-        .signals()
-        .mouse_entered()
-        .connect_self(|s: &mut RigidBody2D| s.on_mouse_entered());*/
+        self.base()
+            .signals()
+            .mouse_entered()
+            .connect_other(self, |s| s.on_mouse_entered(true));
+        self.base()
+            .signals()
+            .mouse_exited()
+            .connect_other(self, |s| s.on_mouse_entered(false));
     }
 
     fn process(&mut self, delta: f64) {
         self.update_path_progress(delta / 20.0);
     }
 
-    fn input(&mut self, event: Gd<InputEvent>) {
-        // Update mouse follow marker
-        let Ok(event) = event.try_cast::<InputEventMouseMotion>() else {
-            return;
-        };
-        let mouse_pos = event.get_global_position();
-        self.get_node_follow_mouse_cursor()
-            .set_global_position(mouse_pos);
+    fn physics_process(&mut self, _delta: f64) {
+        self.drag_towards_cursor();
     }
 }
