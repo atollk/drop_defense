@@ -42,8 +42,9 @@ animations = [{
 radius = 73.0
 height = 310.0
 
+[sub_resource type="CanvasTexture" id="CanvasTexture_vh74b"]
+
 [node name="Enemy" type="Enemy" unique_id=1915612589]
-freeze = true
 
 [node name="AnimatedSprite2D" type="AnimatedSprite2D" parent="." unique_id=1570912286]
 position = Vector2(0.593523, -156.90648)
@@ -55,3 +56,14 @@ frame_progress = 0.8407129
 [node name="CollisionShape2D" type="CollisionShape2D" parent="." unique_id=1666332256]
 position = Vector2(0.593523, -156.90648)
 shape = SubResource("CapsuleShape2D_vh74b")
+
+[node name="FollowMouseCursor" type="StaticBody2D" parent="." unique_id=301723871]
+
+[node name="Sprite2D" type="Sprite2D" parent="FollowMouseCursor" unique_id=832443882]
+position = Vector2(11.75, 17.75)
+scale = Vector2(24.5, 36.5)
+texture = SubResource("CanvasTexture_vh74b")
+
+[node name="DampedSpringJoint2D" type="DampedSpringJoint2D" parent="." unique_id=1355430306]
+node_a = NodePath("../FollowMouseCursor")
+node_b = NodePath("..")
