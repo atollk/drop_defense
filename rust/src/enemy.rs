@@ -1,8 +1,8 @@
 use crate::node_getter;
 use godot::classes::input::CursorShape;
 use godot::classes::{
-    CollisionShape2D, IRigidBody2D, Input, InputEvent, InputEventMouseMotion, PathFollow2D,
-    RigidBody2D, StaticBody2D,
+    CollisionShape2D, IRigidBody2D, Input, InputEvent, InputEventMouse, InputEventMouseButton,
+    InputEventMouseMotion, PathFollow2D, RigidBody2D, StaticBody2D,
 };
 use godot::prelude::*;
 
@@ -16,10 +16,16 @@ struct Enemy {
     /// The progress (from 0 to 1) along [path_follow].
     progress: f64,
 
-    /// Whether the enemy is currently being dragged by the mouse.
-    is_dragging: bool,
+    /// State of the mouse w.r.t. this enemy.
+    mouse_state: MouseState,
 
     base: Base<RigidBody2D>,
+}
+
+enum MouseState {
+    None,
+    Hovering,
+    Dragging,
 }
 
 impl Enemy {
@@ -51,7 +57,13 @@ impl Enemy {
     }
 
     fn on_mouse_entered(&mut self, entered: bool) {
-        godot_print!("on_mouse_entered: {}", entered);
+        if !matches!(self.mouse_state, MouseState::Dragging) {
+            self.mouse_state = if entered {
+                MouseState::Hovering
+            } else {
+                MouseState::None
+            };
+        }
         let shape = if entered {
             CursorShape::POINTING_HAND
         } else {
@@ -64,7 +76,7 @@ impl Enemy {
     }
 
     fn drag_towards_cursor(&mut self) {
-        if !self.is_dragging {
+        if !matches!(self.mouse_state, MouseState::Dragging) {
             return;
         }
 
@@ -88,7 +100,7 @@ impl IRigidBody2D for Enemy {
         Enemy {
             path_follow: None,
             progress: 0.0,
-            is_dragging: false,
+            mouse_state: MouseState::None,
             base,
         }
     }
@@ -112,5 +124,17 @@ impl IRigidBody2D for Enemy {
 
     fn physics_process(&mut self, _delta: f64) {
         self.drag_towards_cursor();
+    }
+
+    fn input(&mut self, event: Gd<InputEvent>) {
+        if let Ok(mouse_button_event) = event.try_cast::<InputEventMouseButton>() {
+            if mouse_button_event.is_pressed() {
+                if matches!(self.mouse_state, MouseState::Hovering) {
+                    self.mouse_state = MouseState::Dragging;
+                }
+            } else if mouse_button_event.is_released() {
+                self.mouse_state = MouseState::None; // TODO consider hovering
+            }
+        }
     }
 }

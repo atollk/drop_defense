@@ -39,10 +39,11 @@ animations = [{
 }]
 
 [sub_resource type="CapsuleShape2D" id="CapsuleShape2D_vh74b"]
-radius = 73.0
-height = 310.0
+radius = 77.5
+height = 325.99997
 
 [node name="Enemy" type="Enemy" unique_id=1915612589]
+input_pickable = true
 gravity_scale = 0.0
 
 [node name="AnimatedSprite2D" type="AnimatedSprite2D" parent="." unique_id=1570912286]
@@ -53,5 +54,5 @@ frame = 3
 frame_progress = 0.8407129
 
 [node name="CollisionShape2D" type="CollisionShape2D" parent="." unique_id=1666332256]
-position = Vector2(0.5000019, 1.5258789e-05)
+position = Vector2(4, 9)
 shape = SubResource("CapsuleShape2D_vh74b")
