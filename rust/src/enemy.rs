@@ -1,5 +1,8 @@
+use crate::node_getter;
 use godot::classes::input::CursorShape;
-use godot::classes::{IRigidBody2D, Input, InputEvent, InputEventMouseButton, Path2D, RigidBody2D};
+use godot::classes::{
+    IRigidBody2D, Input, InputEvent, InputEventMouseButton, Path2D, RayCast2D, RigidBody2D,
+};
 use godot::prelude::*;
 
 #[derive(GodotClass)]
@@ -21,6 +24,7 @@ struct Enemy {
     base: Base<RigidBody2D>,
 }
 
+#[derive(Debug, PartialEq, Eq)]
 enum EnemyState {
     Walking,
     Dragged,
@@ -28,6 +32,8 @@ enum EnemyState {
 }
 
 impl Enemy {
+    node_getter!(RayCast2D, "GroundCast");
+
     /// RigidBody2D does not support settings its scale directly, so we have to use this workaround
     /// by setting the scale of every child individually.
     pub fn set_scale(&mut self, scale: Vector2) {
@@ -59,7 +65,7 @@ impl Enemy {
     }
 
     fn update_cursor(&self) {
-        let shape = if matches!(self.state, EnemyState::Dragged) {
+        let shape = if self.state == EnemyState::Dragged {
             CursorShape::MOVE
         } else {
             if self.mouse_is_over {
@@ -96,12 +102,14 @@ impl Enemy {
     fn set_state(&mut self, new_state: EnemyState) {
         self.state = new_state;
         self.update_cursor();
-        let gravity_scale = if matches!(self.state, EnemyState::Falling) {
+        let gravity_scale = if self.state == EnemyState::Falling {
             1.
         } else {
             0.
         };
         self.base_mut().set_gravity_scale(gravity_scale);
+        let freeze_enabled = self.state == EnemyState::Walking;
+        self.base_mut().set_freeze_enabled(freeze_enabled);
     }
 }
 
@@ -131,13 +139,27 @@ impl IRigidBody2D for Enemy {
     }
 
     fn process(&mut self, delta: f64) {
-        if matches!(self.state, EnemyState::Walking) {
+        if self.state == EnemyState::Walking {
             self.update_path_progress(delta / 20.0);
+        }
+        if self.state == EnemyState::Falling {
+            if let Some(walk_path) = &self.walk_path {
+                if self.get_node_ground_cast().is_colliding() {
+                    // The enemy has fallen to the ground.
+                    let curve = walk_path
+                        .get_curve()
+                        .expect("the path must have a curve defined");
+                    let offset = curve
+                        .get_closest_offset(walk_path.to_local(self.base().get_global_position()));
+                    self.progress = (offset / curve.get_baked_length()) as f64;
+                    self.set_state(EnemyState::Walking);
+                }
+            }
         }
     }
 
     fn physics_process(&mut self, _delta: f64) {
-        if matches!(self.state, EnemyState::Dragged) {
+        if self.state == EnemyState::Dragged {
             self.drag_towards_cursor();
         }
     }
@@ -145,7 +167,7 @@ impl IRigidBody2D for Enemy {
     fn input(&mut self, event: Gd<InputEvent>) {
         if let Ok(mouse_button_event) = event.try_cast::<InputEventMouseButton>() {
             if mouse_button_event.is_pressed() {
-                if matches!(self.state, EnemyState::Dragged) {
+                if self.state == EnemyState::Dragged {
                     unreachable!(
                         "We were dragging an enemy already and sent a mouse press during that."
                     )

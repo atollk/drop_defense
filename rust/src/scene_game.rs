@@ -1,5 +1,5 @@
 use crate::node_getter;
-use godot::classes::{Area2D, CollisionPolygon2D, Path2D, Sprite2D, StaticBody2D};
+use godot::classes::{CollisionPolygon2D, Path2D, Sprite2D, StaticBody2D};
 use godot::prelude::*;
 
 #[derive(GodotClass)]
