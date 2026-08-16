@@ -26,6 +26,7 @@ position = Vector2(-10, 0)
 curve = SubResource("Curve2D_vh74b")
 
 [node name="GroundBody" type="StaticBody2D" parent="." unique_id=912672044]
+collision_layer = 3
 
 [node name="LeftWall" type="StaticBody2D" parent="." unique_id=885797533]
 

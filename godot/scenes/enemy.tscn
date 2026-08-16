@@ -59,5 +59,21 @@ frame_progress = 0.8407129
 position = Vector2(2, -147)
 shape = SubResource("CapsuleShape2D_vh74b")
 
-[node name="GroundCast" type="RayCast2D" parent="." unique_id=880895721]
-target_position = Vector2(0, 23)
+[node name="GroundCast" type="Node2D" parent="." unique_id=1546079193]
+
+[node name="1" type="RayCast2D" parent="GroundCast" unique_id=880895721]
+target_position = Vector2(0, 25)
+collision_mask = 2
+
+[node name="2" type="RayCast2D" parent="GroundCast" unique_id=434530765]
+position = Vector2(-44, 0)
+target_position = Vector2(0, 25)
+collision_mask = 2
+
+[node name="3" type="RayCast2D" parent="GroundCast" unique_id=1260275413]
+position = Vector2(49, -1)
+target_position = Vector2(0, 25)
+collision_mask = 2
+
+[node name="GrabPoint" type="Node2D" parent="." unique_id=1106511516]
+position = Vector2(0, -301)
