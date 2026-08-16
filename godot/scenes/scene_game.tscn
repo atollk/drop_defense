@@ -8,6 +8,13 @@ _data = {
 }
 point_count = 7
 
+[sub_resource type="WorldBoundaryShape2D" id="WorldBoundaryShape2D_vh74b"]
+normal = Vector2(1, 0)
+
+[sub_resource type="WorldBoundaryShape2D" id="WorldBoundaryShape2D_1bfyv"]
+normal = Vector2(-1, 0)
+distance = -1280.0
+
 [node name="SceneGame" type="SceneGame" unique_id=741901120]
 
 [node name="Background" type="Sprite2D" parent="." unique_id=38236012]
@@ -19,3 +26,13 @@ position = Vector2(-10, 0)
 curve = SubResource("Curve2D_vh74b")
 
 [node name="GroundBody" type="StaticBody2D" parent="." unique_id=912672044]
+
+[node name="LeftWall" type="StaticBody2D" parent="." unique_id=885797533]
+
+[node name="CollisionShape2D" type="CollisionShape2D" parent="LeftWall" unique_id=1868342393]
+shape = SubResource("WorldBoundaryShape2D_vh74b")
+
+[node name="RightWall" type="StaticBody2D" parent="." unique_id=1496501428]
+
+[node name="CollisionShape2D" type="CollisionShape2D" parent="RightWall" unique_id=1624372387]
+shape = SubResource("WorldBoundaryShape2D_1bfyv")
