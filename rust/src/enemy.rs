@@ -1,37 +1,33 @@
-use crate::node_getter;
 use godot::classes::input::CursorShape;
-use godot::classes::{
-    CollisionShape2D, IRigidBody2D, Input, InputEvent, InputEventMouse, InputEventMouseButton,
-    InputEventMouseMotion, PathFollow2D, RigidBody2D, StaticBody2D,
-};
+use godot::classes::{IRigidBody2D, Input, InputEvent, InputEventMouseButton, Path2D, RigidBody2D};
 use godot::prelude::*;
 
 #[derive(GodotClass)]
 #[class(base=RigidBody2D)]
 struct Enemy {
     #[export]
-    /// A [PathFollow2D] node that the enemy will continuously move along while not dragged.
-    path_follow: Option<Gd<PathFollow2D>>,
+    /// A [Path2D] node that the enemy will continuously move along while not dragged.
+    pub walk_path: Option<Gd<Path2D>>,
 
-    /// The progress (from 0 to 1) along [path_follow].
+    /// The progress (from 0 to 1) along [path].
     progress: f64,
 
-    /// State of the mouse w.r.t. this enemy.
-    mouse_state: MouseState,
+    /// Whether the mouse is inside this enemy's area.
+    mouse_is_over: bool,
+
+    /// State of the enemy
+    state: EnemyState,
 
     base: Base<RigidBody2D>,
 }
 
-enum MouseState {
-    None,
-    Hovering,
-    Dragging,
+enum EnemyState {
+    Walking,
+    Dragged,
+    Falling,
 }
 
 impl Enemy {
-    node_getter!(CollisionShape2D, "CollisionShape2D");
-    node_getter!(StaticBody2D, "FollowMouseCursor");
-
     /// RigidBody2D does not support settings its scale directly, so we have to use this workaround
     /// by setting the scale of every child individually.
     pub fn set_scale(&mut self, scale: Vector2) {
@@ -47,27 +43,30 @@ impl Enemy {
 
     /// Move the enemy along the specified PathFollow2D by the given amount.
     fn update_path_progress(&mut self, delta: f64) {
-        let Some(path) = self.path_follow.as_mut() else {
+        let Some(path) = self.walk_path.as_mut() else {
             return;
         };
         self.progress += delta;
-        path.set_progress_ratio(self.progress as f32);
-        let new_position = path.get_position();
+        let curve = path
+            .get_curve()
+            .expect("the path must have a curve defined");
+        let curve_len = curve.get_baked_length();
+        let new_position = curve
+            .sample_baked_ex()
+            .offset(self.progress as f32 * curve_len)
+            .done();
         self.base_mut().set_position(new_position);
     }
 
-    fn on_mouse_entered(&mut self, entered: bool) {
-        if !matches!(self.mouse_state, MouseState::Dragging) {
-            self.mouse_state = if entered {
-                MouseState::Hovering
-            } else {
-                MouseState::None
-            };
-        }
-        let shape = if entered {
-            CursorShape::POINTING_HAND
+    fn update_cursor(&self) {
+        let shape = if matches!(self.state, EnemyState::Dragged) {
+            CursorShape::MOVE
         } else {
-            CursorShape::ARROW
+            if self.mouse_is_over {
+                CursorShape::POINTING_HAND
+            } else {
+                CursorShape::ARROW
+            }
         };
         Input::singleton()
             .set_default_cursor_shape_ex()
@@ -75,11 +74,12 @@ impl Enemy {
             .done();
     }
 
-    fn drag_towards_cursor(&mut self) {
-        if !matches!(self.mouse_state, MouseState::Dragging) {
-            return;
-        }
+    fn on_mouse_entered(&mut self, entered: bool) {
+        self.mouse_is_over = entered;
+        self.update_cursor();
+    }
 
+    fn drag_towards_cursor(&mut self) {
         const STIFFNESS: f32 = 400.; // how hard are we pulling
         const DAMPING_RATIO: f32 = 0.9;
         const MAX_FORCE: f32 = 8000.;
@@ -92,15 +92,27 @@ impl Enemy {
         self.base_mut()
             .apply_central_force(force.limit_length(Some(MAX_FORCE)));
     }
+
+    fn set_state(&mut self, new_state: EnemyState) {
+        self.state = new_state;
+        self.update_cursor();
+        let gravity_scale = if matches!(self.state, EnemyState::Falling) {
+            1.
+        } else {
+            0.
+        };
+        self.base_mut().set_gravity_scale(gravity_scale);
+    }
 }
 
 #[godot_api]
 impl IRigidBody2D for Enemy {
     fn init(base: Base<Self::Base>) -> Self {
         Enemy {
-            path_follow: None,
+            walk_path: None,
             progress: 0.0,
-            mouse_state: MouseState::None,
+            mouse_is_over: false,
+            state: EnemyState::Walking,
             base,
         }
     }
@@ -119,21 +131,31 @@ impl IRigidBody2D for Enemy {
     }
 
     fn process(&mut self, delta: f64) {
-        self.update_path_progress(delta / 20.0);
+        if matches!(self.state, EnemyState::Walking) {
+            self.update_path_progress(delta / 20.0);
+        }
     }
 
     fn physics_process(&mut self, _delta: f64) {
-        self.drag_towards_cursor();
+        if matches!(self.state, EnemyState::Dragged) {
+            self.drag_towards_cursor();
+        }
     }
 
     fn input(&mut self, event: Gd<InputEvent>) {
         if let Ok(mouse_button_event) = event.try_cast::<InputEventMouseButton>() {
             if mouse_button_event.is_pressed() {
-                if matches!(self.mouse_state, MouseState::Hovering) {
-                    self.mouse_state = MouseState::Dragging;
+                if matches!(self.state, EnemyState::Dragged) {
+                    unreachable!(
+                        "We were dragging an enemy already and sent a mouse press during that."
+                    )
+                } else {
+                    if self.mouse_is_over {
+                        self.set_state(EnemyState::Dragged);
+                    }
                 }
             } else if mouse_button_event.is_released() {
-                self.mouse_state = MouseState::None; // TODO consider hovering
+                self.set_state(EnemyState::Falling);
             }
         }
     }
