@@ -9,6 +9,8 @@ use itertools::Itertools;
 
 const FALLING_GRAVITY: f32 = 1.5;
 
+// TODO: bug: clicking an enemy during standup breaks it
+
 #[derive(GodotClass)]
 #[class(base=RigidBody2D)]
 pub struct Enemy {
@@ -19,6 +21,10 @@ pub struct Enemy {
     /// The max fall damage this enemy can take before dying.
     #[export]
     pub health: u32,
+
+    /// Movement speed while walking.
+    #[export]
+    pub speed: u32,
 
     /// The progress (from 0 to 1) along [path].
     progress: f64,
@@ -236,6 +242,7 @@ impl IRigidBody2D for Enemy {
         Enemy {
             walk_path: None,
             health: 0,
+            speed: 10,
             progress: 0.0,
             mouse_is_over: false,
             state: EnemyState::Walking,
@@ -262,7 +269,7 @@ impl IRigidBody2D for Enemy {
     }
 
     fn process(&mut self, delta: f64) {
-        self.update_path_progress(delta / 20.0);
+        self.update_path_progress(delta / 100.0 * self.speed as f64);
         self.check_fall_ground();
     }
 
