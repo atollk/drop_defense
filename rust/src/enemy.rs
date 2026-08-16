@@ -1,7 +1,8 @@
 use crate::node_getter;
 use godot::classes::input::CursorShape;
 use godot::classes::{
-    IRigidBody2D, Input, InputEvent, InputEventMouseButton, Path2D, RayCast2D, RigidBody2D,
+    AnimatedSprite2D, IRigidBody2D, Input, InputEvent, InputEventMouseButton, Path2D, RayCast2D,
+    RigidBody2D,
 };
 use godot::prelude::*;
 use itertools::Itertools;
@@ -10,10 +11,14 @@ const FALLING_GRAVITY: f32 = 1.5;
 
 #[derive(GodotClass)]
 #[class(base=RigidBody2D)]
-struct Enemy {
-    #[export]
+pub struct Enemy {
     /// A [Path2D] node that the enemy will continuously move along while not dragged.
+    #[export]
     pub walk_path: Option<Gd<Path2D>>,
+
+    /// The max fall damage this enemy can take before dying.
+    #[export]
+    pub health: u32,
 
     /// The progress (from 0 to 1) along [path].
     progress: f64,
@@ -24,8 +29,8 @@ struct Enemy {
     /// State of the enemy
     state: EnemyState,
 
-    /// The highest recorded fall velocity in Y direction.
-    fall_velocity: f64,
+    /// The Y coordinate at which falling started.
+    fall_height: f32,
 
     base: Base<RigidBody2D>,
 }
@@ -35,11 +40,34 @@ enum EnemyState {
     Walking,
     Dragged,
     Falling,
+    Attacking,
+    StandingUp,
+    Dying,
+}
+
+impl EnemyState {
+    fn animation_name(&self) -> &'static str {
+        match self {
+            EnemyState::Walking => "walk",
+            EnemyState::Dragged => "stand",
+            EnemyState::Falling => "stand",
+            EnemyState::Attacking => "attack",
+            EnemyState::StandingUp => "standup",
+            EnemyState::Dying => "death",
+        }
+    }
+}
+
+#[godot_api]
+impl Enemy {
+    #[signal]
+    pub fn died();
 }
 
 impl Enemy {
     node_getter!(Node2D, "GroundCast");
     node_getter!(Node2D, "GrabPoint");
+    node_getter!(AnimatedSprite2D, "Sprite");
 
     /// RigidBody2D does not support settings its scale directly, so we have to use this workaround
     /// by setting the scale of every child individually.
@@ -56,13 +84,19 @@ impl Enemy {
 
     /// Move the enemy along the specified PathFollow2D by the given amount.
     fn update_path_progress(&mut self, delta: f64) {
-        if self.state != EnemyState::Walking {
+        if self.state != EnemyState::Walking
+            && self.state != EnemyState::Attacking
+            && self.state != EnemyState::StandingUp
+            && self.state != EnemyState::Dying
+        {
             return;
         }
         let Some(path) = self.walk_path.as_mut() else {
             return;
         };
-        self.progress += delta;
+        if self.state == EnemyState::Walking {
+            self.progress = (self.progress + delta).min(1.0);
+        }
         let curve = path
             .get_curve()
             .expect("the path must have a curve defined");
@@ -72,6 +106,10 @@ impl Enemy {
             .offset(self.progress as f32 * curve_len)
             .done();
         self.base_mut().set_position(new_position);
+
+        if self.progress == 1.0 && self.state == EnemyState::Walking {
+            self.set_state(EnemyState::Attacking);
+        }
     }
 
     fn update_cursor(&self) {
@@ -90,12 +128,25 @@ impl Enemy {
             .done();
     }
 
+    /// Connected to a signal whenever the mouse cursor enters or leaves the hitbox.
     fn on_mouse_entered(&mut self, entered: bool) {
         self.mouse_is_over = entered;
         self.update_cursor();
     }
 
-    fn drag_towards_cursor(&mut self) {
+    /// Connected to a signal whenever the sprite animation finishes.
+    fn on_sprite_animation_finished(&mut self) {
+        if self.state == EnemyState::Dying {
+            self.signals().died().emit();
+            self.base_mut().queue_free();
+        }
+        if self.state == EnemyState::StandingUp {
+            self.set_state(EnemyState::Walking);
+        }
+    }
+
+    /// Called in [physics_process] while the enemy is being dragged to apply the necessary forces.
+    fn drag_towards_cursor(&mut self, _delta: f64) {
         const STIFFNESS: f32 = 600.; // how hard are we pulling
         const DAMPING_RATIO: f32 = 0.9;
         const MAX_FORCE: f32 = 8000.;
@@ -106,6 +157,7 @@ impl Enemy {
         let k = STIFFNESS * mass;
         let c = 2. * DAMPING_RATIO * (k * mass).sqrt();
         let force = local_mouse_pos * k - self.base().get_linear_velocity() * c;
+        // No need to use delta: Forces are time-independent
         self.base_mut()
             .apply_central_force(force.limit_length(Some(MAX_FORCE)));
     }
@@ -113,15 +165,26 @@ impl Enemy {
     /// A setter for `self.state` that makes sure the other invariants are updated correctly.
     fn set_state(&mut self, new_state: EnemyState) {
         self.state = new_state;
+
+        // Mouse cursor
         self.update_cursor();
+
+        // Gravity
         let gravity_scale = if self.state == EnemyState::Falling {
             FALLING_GRAVITY
         } else {
             0.
         };
         self.base_mut().set_gravity_scale(gravity_scale);
+
+        // Physics
         let freeze_enabled = self.state == EnemyState::Walking;
         self.base_mut().set_freeze_enabled(freeze_enabled);
+
+        // Animation
+        self.get_node_sprite()
+            .set_animation(self.state.animation_name());
+        self.get_node_sprite().play();
     }
 
     /// Checks whether a falling enemy has hit the ground.
@@ -132,7 +195,11 @@ impl Enemy {
         let Some(walk_path) = &self.walk_path else {
             return;
         };
+        if self.base().get_linear_velocity().y.is_sign_positive() {
+            return;
+        }
 
+        // Check if any of the "foot" rays detects ground.
         let rays: [_; 3] = self
             .get_node_ground_cast()
             .get_children()
@@ -152,8 +219,14 @@ impl Enemy {
         let offset =
             curve.get_closest_offset(walk_path.to_local(self.base().get_global_position()));
         self.progress = (offset / curve.get_baked_length()) as f64;
-        self.set_state(EnemyState::Walking);
-        godot_print!("{}", self.fall_velocity)
+
+        let fall_damage = (self.base().get_global_position().y - self.fall_height) as f64;
+        godot_print!("FALL DAMAGE: {}", fall_damage);
+        if fall_damage > self.health as f64 {
+            self.set_state(EnemyState::Dying);
+        } else {
+            self.set_state(EnemyState::StandingUp);
+        }
     }
 }
 
@@ -162,10 +235,11 @@ impl IRigidBody2D for Enemy {
     fn init(base: Base<Self::Base>) -> Self {
         Enemy {
             walk_path: None,
+            health: 0,
             progress: 0.0,
             mouse_is_over: false,
             state: EnemyState::Walking,
-            fall_velocity: 0.0,
+            fall_height: f32::INFINITY,
             base,
         }
     }
@@ -181,6 +255,10 @@ impl IRigidBody2D for Enemy {
             .signals()
             .mouse_exited()
             .connect_other(self, |s| s.on_mouse_entered(false));
+        self.get_node_sprite()
+            .signals()
+            .animation_finished()
+            .connect_other(self, Self::on_sprite_animation_finished);
     }
 
     fn process(&mut self, delta: f64) {
@@ -188,17 +266,16 @@ impl IRigidBody2D for Enemy {
         self.check_fall_ground();
     }
 
-    fn physics_process(&mut self, _delta: f64) {
+    fn physics_process(&mut self, delta: f64) {
         if self.state == EnemyState::Dragged {
-            self.drag_towards_cursor();
+            self.drag_towards_cursor(delta);
         }
 
-        // Update fall velocity
+        // Update fall height
         if self.state == EnemyState::Falling {
-            let current_velocity_y = self.base().get_linear_velocity().y as f64;
-            self.fall_velocity = self.fall_velocity.max(current_velocity_y);
+            self.fall_height = self.fall_height.min(self.base().get_global_position().y);
         } else {
-            self.fall_velocity = 0.0;
+            self.fall_height = f32::INFINITY;
         }
     }
 

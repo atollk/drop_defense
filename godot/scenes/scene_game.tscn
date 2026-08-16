@@ -21,7 +21,7 @@ distance = -1280.0
 position = Vector2(640, 360)
 texture = ExtResource("1_1bfyv")
 
-[node name="Path2D" type="Path2D" parent="." unique_id=1709280768]
+[node name="WalkPath" type="Path2D" parent="." unique_id=1709280768]
 position = Vector2(-10, 0)
 curve = SubResource("Curve2D_vh74b")
 
@@ -37,3 +37,5 @@ shape = SubResource("WorldBoundaryShape2D_vh74b")
 
 [node name="CollisionShape2D" type="CollisionShape2D" parent="RightWall" unique_id=1624372387]
 shape = SubResource("WorldBoundaryShape2D_1bfyv")
+
+[node name="Enemies" type="Node2D" parent="." unique_id=1585581281]
