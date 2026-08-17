@@ -97,21 +97,23 @@ impl Enemy {
         {
             return;
         }
-        let Some(path) = self.walk_path.as_mut() else {
+        let Some(walk_path) = self.walk_path.as_mut() else {
             return;
         };
         if self.state == EnemyState::Walking {
             self.progress = (self.progress + delta).min(1.0);
         }
-        let curve = path
+        let curve = walk_path
             .get_curve()
             .expect("the path must have a curve defined");
         let curve_len = curve.get_baked_length();
-        let new_position = curve
-            .sample_baked_ex()
-            .offset(self.progress as f32 * curve_len)
-            .done();
-        self.base_mut().set_position(new_position);
+        let new_position = walk_path.to_global(
+            curve
+                .sample_baked_ex()
+                .offset(self.progress as f32 * curve_len)
+                .done(),
+        );
+        self.base_mut().set_global_position(new_position);
 
         if self.progress == 1.0 && self.state == EnemyState::Walking {
             self.set_state(EnemyState::Attacking);

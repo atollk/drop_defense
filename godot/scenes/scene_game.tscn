@@ -18,11 +18,11 @@ distance = -1280.0
 [node name="SceneGame" type="SceneGame" unique_id=741901120]
 
 [node name="Background" type="Sprite2D" parent="." unique_id=38236012]
-position = Vector2(640, 360)
+position = Vector2(640, 500)
 texture = ExtResource("1_1bfyv")
 
 [node name="WalkPath" type="Path2D" parent="." unique_id=1709280768]
-position = Vector2(-10, 0)
+position = Vector2(0, 280)
 curve = SubResource("Curve2D_vh74b")
 
 [node name="GroundBody" type="StaticBody2D" parent="." unique_id=912672044]

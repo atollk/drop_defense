@@ -19,11 +19,14 @@ impl SceneGame {
     fn set_ground_from_path(&mut self) {
         // Get point collection for the ground.
         let ground_points = {
-            let mut ground_points = self
-                .get_node_walk_path()
+            let walk_path = self.get_node_walk_path();
+            let mut ground_points = walk_path
                 .get_curve()
                 .expect("path needs to have a curve")
                 .tessellate();
+            for x in ground_points.as_mut_slice() {
+                *x = walk_path.to_global(*x);
+            }
             let background_sprite = self.get_node_background();
             let lower_right_corner =
                 background_sprite.get_texture().unwrap().get_size() * background_sprite.get_scale();
