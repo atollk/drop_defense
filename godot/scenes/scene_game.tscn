@@ -39,3 +39,25 @@ shape = SubResource("WorldBoundaryShape2D_vh74b")
 shape = SubResource("WorldBoundaryShape2D_1bfyv")
 
 [node name="Enemies" type="Node2D" parent="." unique_id=1585581281]
+
+[node name="UI" type="Control" parent="." unique_id=117352088]
+layout_mode = 3
+anchors_preset = 0
+offset_right = 40.0
+offset_bottom = 40.0
+
+[node name="LifeBarRed" type="ColorRect" parent="UI" unique_id=1803693622]
+layout_mode = 0
+offset_left = 785.0
+offset_top = 44.0
+offset_right = 1233.0
+offset_bottom = 116.0
+color = Color(1, 0, 0, 1)
+
+[node name="LifeBarGreen" type="ColorRect" parent="UI" unique_id=1467215151]
+layout_mode = 0
+offset_left = 785.0
+offset_top = 44.0
+offset_right = 1022.0
+offset_bottom = 116.0
+color = Color(0, 1, 0, 1)

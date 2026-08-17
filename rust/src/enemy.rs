@@ -1,4 +1,5 @@
 use crate::node_getter;
+use crate::singletons::GameStats;
 use godot::classes::input::CursorShape;
 use godot::classes::{
     AnimatedSprite2D, IRigidBody2D, Input, InputEvent, InputEventMouseButton, Path2D, RayCast2D,
@@ -273,6 +274,12 @@ impl IRigidBody2D for Enemy {
     fn process(&mut self, delta: f64) {
         self.update_path_progress(delta / 100.0 * self.speed as f64);
         self.check_fall_ground();
+
+        if self.state == EnemyState::Attacking {
+            let mut game_stats_singleton = GameStats::singleton();
+            let mut game_stats = game_stats_singleton.bind_mut();
+            game_stats.health = (game_stats.health - delta as f32).max(0.0);
+        }
     }
 
     fn physics_process(&mut self, delta: f64) {

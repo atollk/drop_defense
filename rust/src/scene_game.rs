@@ -1,6 +1,7 @@
 use crate::enemy::Enemy;
-use crate::node_getter;
-use godot::classes::{CollisionPolygon2D, Path2D, Sprite2D, StaticBody2D};
+use crate::singletons::GameStats;
+use crate::{node_getter, node_getter_named};
+use godot::classes::{CollisionPolygon2D, ColorRect, Path2D, Sprite2D, StaticBody2D};
 use godot::prelude::*;
 
 #[derive(GodotClass)]
@@ -14,6 +15,8 @@ impl SceneGame {
     node_getter!(Path2D, "WalkPath");
     node_getter!(StaticBody2D, "GroundBody");
     node_getter!(Node2D, "Enemies");
+    node_getter_named!(ColorRect, "UI/LifeBarRed", get_node_life_bar_red);
+    node_getter_named!(ColorRect, "UI/LifeBarGreen", get_node_life_bar_green);
 
     /// Creates a collision object of the ground, based on the path.
     fn set_ground_from_path(&mut self) {
@@ -63,6 +66,18 @@ impl SceneGame {
             .connect_other(self, Self::spawn_enemy);
         self.get_node_enemies().add_child(&enemy_node);
     }
+
+    /// Updates the health bar.
+    fn update_health_bar(&mut self) {
+        let max_size = self.get_node_life_bar_red().get_size();
+        let game_stats_singleton = GameStats::singleton();
+        let game_stats = game_stats_singleton.bind();
+        let bar_size = Vector2::new(
+            max_size.x * game_stats.health as f32 / game_stats.max_health as f32,
+            max_size.y,
+        );
+        self.get_node_life_bar_green().set_size(bar_size);
+    }
 }
 
 #[godot_api]
@@ -74,5 +89,9 @@ impl INode2D for SceneGame {
     fn ready(&mut self) {
         self.set_ground_from_path();
         self.spawn_enemy();
+    }
+
+    fn process(&mut self, _delta: f64) {
+        self.update_health_bar();
     }
 }
