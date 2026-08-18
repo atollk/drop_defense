@@ -1,0 +1,7 @@
+<component name="ProjectRunConfigurationManager">
+  <configuration default="false" name="Debug drop_defense" type="RsRemoteRunConfiguration" debuggerKind="LLDB" remoteCommand="connect://localhost:9999" symbolFile="$PROJECT_DIR$/rust/target/debug/libdrop_defense.so" sysroot="">
+    <method v="2">
+      <option name="ToolBeforeRunTask" enabled="true" actionId="Tool_External Tools_debug_prep" />
+    </method>
+  </configuration>
+</component>

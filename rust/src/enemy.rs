@@ -173,6 +173,7 @@ impl Enemy {
 
     /// A setter for `self.state` that makes sure the other invariants are updated correctly.
     fn set_state(&mut self, new_state: EnemyState) {
+        godot_print!("Enemy.set_state {:?}", new_state);
         self.state = new_state;
 
         // Mouse cursor
