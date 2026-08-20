@@ -42,8 +42,8 @@ pub struct Enemy {
     base: Base<RigidBody2D>,
 }
 
-#[derive(Debug, PartialEq, Eq)]
-enum EnemyState {
+#[derive(Debug, PartialEq, Eq, Clone, Copy, Hash)]
+pub enum EnemyState {
     Walking,
     Dragged,
     Falling,
@@ -71,6 +71,7 @@ impl Enemy {
     pub fn died();
 }
 
+// General logic
 impl Enemy {
     node_getter!(Node2D, "GroundCast");
     node_getter!(Node2D, "GrabPoint");
@@ -121,28 +122,6 @@ impl Enemy {
         }
     }
 
-    fn update_cursor(&self) {
-        let shape = if self.state == EnemyState::Dragged {
-            CursorShape::MOVE
-        } else {
-            if self.mouse_is_over {
-                CursorShape::POINTING_HAND
-            } else {
-                CursorShape::ARROW
-            }
-        };
-        Input::singleton()
-            .set_default_cursor_shape_ex()
-            .shape(shape)
-            .done();
-    }
-
-    /// Connected to a signal whenever the mouse cursor enters or leaves the hitbox.
-    fn on_mouse_entered(&mut self, entered: bool) {
-        self.mouse_is_over = entered;
-        self.update_cursor();
-    }
-
     /// Connected to a signal whenever the sprite animation finishes.
     fn on_sprite_animation_finished(&mut self) {
         if self.state == EnemyState::Dying {
@@ -154,21 +133,8 @@ impl Enemy {
         }
     }
 
-    /// Called in [physics_process] while the enemy is being dragged to apply the necessary forces.
-    fn drag_towards_cursor(&mut self, _delta: f64) {
-        const STIFFNESS: f32 = 600.; // how hard are we pulling
-        const DAMPING_RATIO: f32 = 0.9;
-        const MAX_FORCE: f32 = 8000.;
-
-        let local_mouse_pos =
-            self.base().get_local_mouse_position() - self.get_node_grab_point().get_position();
-        let mass = self.base().get_mass();
-        let k = STIFFNESS * mass;
-        let c = 2. * DAMPING_RATIO * (k * mass).sqrt();
-        let force = local_mouse_pos * k - self.base().get_linear_velocity() * c;
-        // No need to use delta: Forces are time-independent
-        self.base_mut()
-            .apply_central_force(force.limit_length(Some(MAX_FORCE)));
+    pub fn get_state(&self) -> EnemyState {
+        self.state
     }
 
     /// A setter for `self.state` that makes sure the other invariants are updated correctly.
@@ -243,6 +209,60 @@ impl Enemy {
     }
 }
 
+// Dragging / Mouse Cursor logic
+impl Enemy {
+    fn update_cursor(&self) {
+        let shape = if self.state == EnemyState::Dragged {
+            CursorShape::MOVE
+        } else {
+            if self.mouse_is_over {
+                CursorShape::POINTING_HAND
+            } else {
+                CursorShape::ARROW
+            }
+        };
+        Input::singleton()
+            .set_default_cursor_shape_ex()
+            .shape(shape)
+            .done();
+    }
+
+    /// Connected to a signal whenever the mouse cursor enters or leaves the hitbox.
+    fn on_mouse_entered(&mut self, entered: bool) {
+        self.mouse_is_over = entered;
+        self.update_cursor();
+    }
+
+    /// Called in [physics_process] while the enemy is being dragged to apply the necessary forces.
+    fn drag_towards_cursor(&mut self, _delta: f64) {
+        const STIFFNESS: f32 = 600.; // how hard are we pulling
+        const DAMPING_RATIO: f32 = 0.9;
+        const MAX_FORCE: f32 = 8000.;
+
+        let local_mouse_pos =
+            self.base().get_local_mouse_position() - self.get_node_grab_point().get_position();
+        let mass = self.base().get_mass();
+        let k = STIFFNESS * mass;
+        let c = 2. * DAMPING_RATIO * (k * mass).sqrt();
+        let force = local_mouse_pos * k - self.base().get_linear_velocity() * c;
+        // No need to use delta: Forces are time-independent
+        self.base_mut()
+            .apply_central_force(force.limit_length(Some(MAX_FORCE)));
+    }
+
+    pub fn has_mouse_is_over(&self) -> bool {
+        self.mouse_is_over
+    }
+
+    pub fn start_dragged(&mut self) {
+        self.set_state(EnemyState::Dragged);
+    }
+
+    pub fn stop_dragged(&mut self) {
+        self.set_state(EnemyState::Falling);
+    }
+}
+
 #[godot_api]
 impl IRigidBody2D for Enemy {
     fn init(base: Base<Self::Base>) -> Self {
@@ -296,26 +316,6 @@ impl IRigidBody2D for Enemy {
             self.fall_height = self.fall_height.min(self.base().get_global_position().y);
         } else {
             self.fall_height = f32::INFINITY;
-        }
-    }
-
-    fn input(&mut self, event: Gd<InputEvent>) {
-        if let Ok(mouse_button_event) = event.try_cast::<InputEventMouseButton>() {
-            if mouse_button_event.is_pressed() {
-                if self.state == EnemyState::Dragged {
-                    unreachable!(
-                        "We were dragging an enemy already and sent a mouse press during that."
-                    )
-                } else {
-                    if self.mouse_is_over {
-                        self.set_state(EnemyState::Dragged);
-                    }
-                }
-            } else if mouse_button_event.is_released() {
-                if self.state == EnemyState::Dragged {
-                    self.set_state(EnemyState::Falling);
-                }
-            }
         }
     }
 }

@@ -178,6 +178,7 @@ radius = 77.5
 height = 308.00003
 
 [node name="Enemy" type="Enemy" unique_id=1915612589]
+collision_mask = 0
 input_pickable = true
 gravity_scale = 0.0
 lock_rotation = true

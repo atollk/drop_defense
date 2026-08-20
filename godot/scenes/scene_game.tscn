@@ -61,3 +61,6 @@ offset_top = 44.0
 offset_right = 1022.0
 offset_bottom = 116.0
 color = Color(0, 1, 0, 1)
+
+[node name="SpawnTimer" type="Timer" parent="." unique_id=435115490]
+one_shot = true
