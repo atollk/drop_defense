@@ -205,7 +205,9 @@ impl Enemy {
         let Some(walk_path) = &self.walk_path else {
             return;
         };
-        if self.base().get_linear_velocity().y.is_sign_positive() {
+        // Falling can only end if the enemy is moving down (y positive).
+        // Just checking > 0 doesn't work because of floating points arithmetic.
+        if self.base().get_linear_velocity().y < -1.0 {
             return;
         }
 
@@ -231,11 +233,12 @@ impl Enemy {
         self.progress = (offset / curve.get_baked_length()) as f64;
 
         let fall_damage = (self.base().get_global_position().y - self.fall_height) as f64;
-        godot_print!("FALL DAMAGE: {}", fall_damage);
         if fall_damage > self.health as f64 {
             self.set_state(EnemyState::Dying);
-        } else {
+        } else if fall_damage * 5. > self.health as f64 {
             self.set_state(EnemyState::StandingUp);
+        } else {
+            self.set_state(EnemyState::Walking);
         }
     }
 }
@@ -309,7 +312,9 @@ impl IRigidBody2D for Enemy {
                     }
                 }
             } else if mouse_button_event.is_released() {
-                self.set_state(EnemyState::Falling);
+                if self.state == EnemyState::Dragged {
+                    self.set_state(EnemyState::Falling);
+                }
             }
         }
     }
