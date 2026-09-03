@@ -1,10 +1,7 @@
 use crate::node_getter;
 use crate::singletons::GameStats;
 use godot::classes::input::CursorShape;
-use godot::classes::{
-    AnimatedSprite2D, IRigidBody2D, Input, InputEvent, InputEventMouseButton, Path2D, RayCast2D,
-    RigidBody2D,
-};
+use godot::classes::{AnimatedSprite2D, IRigidBody2D, Input, Path2D, RayCast2D, RigidBody2D};
 use godot::prelude::*;
 use itertools::Itertools;
 

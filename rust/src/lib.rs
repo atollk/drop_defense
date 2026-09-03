@@ -1,5 +1,7 @@
 mod enemy;
+pub mod root_main;
 mod scene_game;
+pub mod scene_main_menu;
 pub mod singletons;
 pub mod util;
 

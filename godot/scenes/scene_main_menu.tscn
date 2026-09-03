@@ -1,0 +1,28 @@
+[gd_scene format=3 uid="uid://dotdtcp571xj4"]
+
+[ext_resource type="PackedScene" uid="uid://bgl3cbmm7jtgi" path="res://scenes/main_menu_button.tscn" id="1_tk4wt"]
+
+[node name="SceneMainMenu" type="SceneMainMenu" unique_id=1753917142]
+anchors_preset = 15
+anchor_right = 1.0
+anchor_bottom = 1.0
+grow_horizontal = 2
+grow_vertical = 2
+
+[node name="VBoxContainer" type="VBoxContainer" parent="." unique_id=1873058594]
+layout_mode = 1
+anchors_preset = 15
+anchor_right = 1.0
+anchor_bottom = 1.0
+grow_horizontal = 2
+grow_vertical = 2
+theme_override_constants/separation = 50
+alignment = 1
+
+[node name="StartButton" parent="VBoxContainer" unique_id=33297459 instance=ExtResource("1_tk4wt")]
+layout_mode = 2
+text = "Start"
+
+[node name="ExitButton" parent="VBoxContainer" unique_id=546133764 instance=ExtResource("1_tk4wt")]
+layout_mode = 2
+text = "Exit"

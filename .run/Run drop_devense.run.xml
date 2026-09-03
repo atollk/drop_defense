@@ -11,7 +11,9 @@
     <option name="INTERPRETER_OPTIONS" value="" />
     <option name="EXECUTE_IN_TERMINAL" value="true" />
     <option name="EXECUTE_SCRIPT_FILE" value="false" />
-    <envs />
+    <envs>
+      <env name="RUST_BACKTRACE" value="1" />
+    </envs>
     <method v="2">
       <option name="RunConfigurationTask" enabled="true" run_configuration_name="Build drop_defense" run_configuration_type="CargoCommandRunConfiguration" />
     </method>

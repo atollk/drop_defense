@@ -16,7 +16,8 @@ macro_rules! node_getter {
 #[macro_export]
 macro_rules! node_getter_named {
     ($typ:ty, $node_name:literal, $function_name:ident) => {
-        fn $function_name(&self) -> Gd<$typ> {
+        fn $function_name(&self) -> godot::obj::Gd<$typ> {
+            use godot::obj::WithBaseField;
             self.base().get_node_as($node_name)
         }
     };
@@ -30,7 +31,7 @@ macro_rules! node_getter_named {
 macro_rules! node_try_getter {
     ($typ:ty, $name:literal) => {
         ::paste::paste! {
-            $crate::node_try_getter_named!($typ, $name, [<get_node_ $name:snake>]);
+            $crate::node_try_getter_named!($typ, $name, [<try_get_node_ $name:snake>]);
         }
     };
 }
@@ -41,7 +42,8 @@ macro_rules! node_try_getter {
 #[macro_export]
 macro_rules! node_try_getter_named {
     ($typ:ty, $node_name:literal, $function_name:ident) => {
-        fn $function_name(&self) -> Option<Gd<$typ>> {
+        fn $function_name(&self) -> Option<godot::obj::Gd<$typ>> {
+            use godot::obj::WithBaseField;
             self.base().try_get_node_as($node_name)
         }
     };
