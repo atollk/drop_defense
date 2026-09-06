@@ -3,95 +3,6 @@ use godot::obj::{Base, Gd, NewAlloc, OnReady, Singleton, WithBaseField};
 use godot::prelude::*;
 use tap::Tap;
 
-#[derive(GodotClass)]
-#[class(init, tool, base=Node2D)]
-struct FluidSplash {
-    base: Base<Node2D>,
-
-    #[export_group(name = "Drops")]
-    #[export]
-    particle_amount: u32,
-
-    #[export]
-    texture: Option<Gd<Texture2D>>,
-
-    #[export_tool_button(fn = Self::spawn_drops, name = "Spawn Sprite", icon = "Add")]
-    spawn_sprite: PhantomVar<Callable>,
-
-    // Internal fields
-    drops: Vec<Gd<SplashDrop>>,
-}
-
-impl FluidSplash {
-    fn spawn_drops(&mut self) {
-        for _ in 0..self.particle_amount {
-            let mut drop = SplashDrop::new();
-            if let Some(texture) = &self.texture {
-                drop.set_texture(texture);
-                drop.set_scale(Vector2::ONE * 0.1);
-            }
-            self.base_mut().add_child(&drop);
-            self.drops.push(drop);
-        }
-    }
-}
-
-#[godot_api]
-impl FluidSplash {}
-
-#[godot_api]
-impl INode2D for FluidSplash {
-    fn ready(&mut self) {}
-}
-
-#[derive(GodotClass)]
-#[class(init, tool, base=Sprite2D)]
-struct SplashDrop {
-    angle: f32,
-    velocity: f32,
-    position: Vector2,
-    base: Base<Sprite2D>,
-}
-
-impl SplashDrop {
-    fn new() -> Gd<Self> {
-        let pi = std::f32::consts::PI;
-        Gd::from_init_fn(|base| Self {
-            angle: rand::random_range((pi * 1.4)..=(pi * 1.6)),
-            velocity: rand::random_range(20.0..50.0),
-            position: Vector2::ZERO,
-            base,
-        })
-    }
-}
-
-#[godot_api]
-impl ISprite2D for SplashDrop {
-    fn process(&mut self, delta: f64) {
-        // Update velocity & position
-        let d = delta as f32 * 10.;
-        let velocity_vector = {
-            let mut velocity_vector = self.velocity * Vector2::RIGHT.rotated(self.angle);
-            velocity_vector.y += d * 2.;
-            velocity_vector
-        };
-        self.angle = velocity_vector.angle();
-        self.velocity = velocity_vector.length();
-        self.position += velocity_vector * d;
-
-        self.angle.tap(|angle| {
-            self.base_mut()
-                .set_rotation(*angle + std::f32::consts::PI * 1.5)
-        });
-        self.position.tap(|pos| self.base_mut().set_position(*pos));
-
-        // Check despawn
-        if self.position.y > 100. {
-            self.base_mut().queue_free();
-        }
-    }
-}
-
 /*
 
 @export_group("Drops")
@@ -124,3 +35,95 @@ impl ISprite2D for SplashDrop {
 @export var free_when_done: bool = true
 
  */
+
+#[derive(GodotClass)]
+#[class(init, tool, base=Node2D)]
+struct FluidSplash {
+    base: Base<Node2D>,
+
+    #[export_group(name = "Drops")]
+
+    /// Random range of minimal and maximal amount of spawned particles.
+    #[export]
+    particle_amount: Vector2i,
+
+    #[export]
+    texture: Option<Gd<Texture2D>>,
+
+    #[export_tool_button(fn = Self::spawn_drops, name = "Spawn Sprite", icon = "Add")]
+    spawn_sprite: PhantomVar<Callable>,
+
+    // Internal fields
+    drops: Vec<Gd<SplashDrop>>,
+}
+
+impl FluidSplash {
+    fn spawn_drops(&mut self) {
+        let particle_amount = rand::random_range(self.particle_amount.x..self.particle_amount.y);
+        for _ in 0..particle_amount {
+            let mut drop = SplashDrop::new();
+            if let Some(texture) = &self.texture {
+                drop.set_texture(texture);
+                drop.set_scale(Vector2::ONE * rand::random_range(0.04..0.08));
+            }
+            self.base_mut().add_child(&drop);
+            self.drops.push(drop);
+        }
+    }
+}
+
+#[godot_api]
+impl FluidSplash {}
+
+#[godot_api]
+impl INode2D for FluidSplash {
+    fn ready(&mut self) {}
+}
+
+#[derive(GodotClass)]
+#[class(init, tool, base=Sprite2D)]
+struct SplashDrop {
+    angle: f32,
+    velocity: f32,
+    position: Vector2,
+    base: Base<Sprite2D>,
+}
+
+impl SplashDrop {
+    fn new() -> Gd<Self> {
+        let pi = std::f32::consts::PI;
+        Gd::from_init_fn(|base| Self {
+            angle: rand::random_range((pi * 1.4)..=(pi * 1.6)),
+            velocity: rand::random_range(30.0..60.0),
+            position: Vector2::ZERO,
+            base,
+        })
+    }
+}
+
+#[godot_api]
+impl ISprite2D for SplashDrop {
+    fn process(&mut self, delta: f64) {
+        // Update velocity & position
+        let velocity_vector = {
+            let mut velocity_vector = self.velocity * Vector2::RIGHT.rotated(self.angle);
+            velocity_vector.y += delta as f32 * 40.;
+            velocity_vector
+        };
+        self.angle = velocity_vector.angle();
+        self.velocity = velocity_vector.length();
+        self.position += velocity_vector * delta as f32 * 10.;
+
+        self.angle.tap(|angle| {
+            self.base_mut()
+                .set_rotation(*angle + std::f32::consts::PI * 1.5)
+        });
+        self.position.tap(|pos| self.base_mut().set_position(*pos));
+
+        // Check despawn
+        if self.position.y > 10. {
+            self.base_mut().queue_free();
+            // TODO: convert to puddle
+        }
+    }
+}

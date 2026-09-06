@@ -212,5 +212,5 @@ target_position = Vector2(0, 25)
 collision_mask = 2
 
 [node name="FluidSplash" type="FluidSplash" parent="." unique_id=924349886]
-particle_amount = 1
+particle_amount = Vector2i(8, 12)
 texture = ExtResource("5_c4w8v")

@@ -8,6 +8,7 @@ crate-type = ["cdylib"]  # Compile this crate to a dynamic C library.
 
 [dependencies]
 godot = { version = "0.5.5", features = [
+    "register-docs",
     # to silence a warning
     "upcoming-editor-placeholders"
 ] }
