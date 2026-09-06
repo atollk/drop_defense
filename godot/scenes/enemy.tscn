@@ -4,6 +4,7 @@
 [ext_resource type="Texture2D" uid="uid://dc3hskt6grhqd" path="res://assets/enemy_walk.png" id="2_4ra3w"]
 [ext_resource type="Texture2D" uid="uid://b2u2li0rojubc" path="res://assets/enemy_die.png" id="2_5uy6h"]
 [ext_resource type="Texture2D" uid="uid://cgcgg4y508rb6" path="res://assets/enemy_standup.png" id="4_c4w8v"]
+[ext_resource type="Texture2D" uid="uid://bn5ieqtql85hf" path="res://assets/water-drop.svg" id="5_c4w8v"]
 
 [sub_resource type="AtlasTexture" id="AtlasTexture_5uy6h"]
 atlas = ExtResource("1_md0e3")
@@ -210,5 +211,6 @@ position = Vector2(49, -1)
 target_position = Vector2(0, 25)
 collision_mask = 2
 
-[node name="GrabPoint" type="Node2D" parent="." unique_id=1106511516]
-position = Vector2(-5, -184)
+[node name="FluidSplash" type="FluidSplash" parent="." unique_id=924349886]
+particle_amount = 1
+texture = ExtResource("5_c4w8v")

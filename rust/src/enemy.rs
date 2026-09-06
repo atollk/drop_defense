@@ -7,8 +7,6 @@ use itertools::Itertools;
 
 const FALLING_GRAVITY: f32 = 1.5;
 
-// TODO: bug: clicking an enemy during standup breaks it
-
 #[derive(GodotClass)]
 #[class(base=RigidBody2D)]
 pub struct Enemy {

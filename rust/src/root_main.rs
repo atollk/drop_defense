@@ -4,16 +4,17 @@ use godot::global::Error;
 use godot::prelude::*;
 
 #[derive(GodotClass)]
-#[class(base=Node)]
+#[class(init, base=Node)]
 struct RootMain {
     base: Base<Node>,
     #[export]
     pub active_scene_type: ActiveSceneType,
 }
 
-#[derive(GodotConvert, Var, Export, Clone)]
+#[derive(GodotConvert, Var, Export, Clone, Default)]
 #[godot(via = GString)]
 enum ActiveSceneType {
+    #[default]
     MainMenu,
     Game,
 }
@@ -96,13 +97,6 @@ impl RootMain {
 
 #[godot_api]
 impl INode for RootMain {
-    fn init(base: Base<Self::Base>) -> Self {
-        Self {
-            base,
-            active_scene_type: ActiveSceneType::MainMenu,
-        }
-    }
-
     fn ready(&mut self) {
         self.enter_scene(self.active_scene_type.clone());
     }

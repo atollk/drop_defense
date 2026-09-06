@@ -9,7 +9,7 @@ use godot::prelude::*;
 use itertools::Itertools;
 
 #[derive(GodotClass)]
-#[class(base=Node2D)]
+#[class(init, base=Node2D)]
 pub struct SceneGame {
     base: Base<Node2D>,
 }
@@ -137,10 +137,6 @@ impl SceneGame {
 
 #[godot_api]
 impl INode2D for SceneGame {
-    fn init(base: Base<Self::Base>) -> Self {
-        SceneGame { base }
-    }
-
     fn ready(&mut self) {
         self.set_ground_from_path();
 

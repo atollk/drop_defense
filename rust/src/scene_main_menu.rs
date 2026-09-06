@@ -4,7 +4,7 @@ use godot::obj::{Base, WithBaseField, WithUserSignals};
 use godot::prelude::{GodotClass, godot_api};
 
 #[derive(GodotClass)]
-#[class(base=Control)]
+#[class(init, base=Control)]
 pub struct SceneMainMenu {
     base: Base<Control>,
 }
@@ -30,10 +30,6 @@ impl SceneMainMenu {
 
 #[godot_api]
 impl IControl for SceneMainMenu {
-    fn init(base: Base<Self::Base>) -> Self {
-        SceneMainMenu { base }
-    }
-
     fn ready(&mut self) {
         self.get_node_start_button()
             .signals()
