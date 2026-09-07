@@ -1,3 +1,5 @@
+use std::ops::{Add, Div, RangeInclusive, Sub};
+
 /**
  * Like [node_try_getter] but panics if the name or type don't match.
  */
@@ -47,4 +49,13 @@ macro_rules! node_try_getter_named {
             self.base().try_get_node_as($node_name)
         }
     };
+}
+
+/// Creates a range from a given center point and the total range width.
+pub fn range_from_center<T>(center: T, width: T) -> RangeInclusive<T>
+where
+    T: Copy + Sub<Output = T> + Add<Output = T> + Div<Output = T> + From<u8>,
+{
+    let half = width / T::from(2u8);
+    (center - half)..=(center + half)
 }

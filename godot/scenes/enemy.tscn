@@ -5,6 +5,7 @@
 [ext_resource type="Texture2D" uid="uid://b2u2li0rojubc" path="res://assets/enemy_die.png" id="2_5uy6h"]
 [ext_resource type="Texture2D" uid="uid://cgcgg4y508rb6" path="res://assets/enemy_standup.png" id="4_c4w8v"]
 [ext_resource type="Texture2D" uid="uid://bn5ieqtql85hf" path="res://assets/water-drop.svg" id="5_c4w8v"]
+[ext_resource type="Texture2D" uid="uid://bb0kxx25r2j88" path="res://assets/water-puddle.svg" id="6_xwavj"]
 
 [sub_resource type="AtlasTexture" id="AtlasTexture_5uy6h"]
 atlas = ExtResource("1_md0e3")
@@ -213,4 +214,11 @@ collision_mask = 2
 
 [node name="FluidSplash" type="FluidSplash" parent="." unique_id=924349886]
 particle_amount = Vector2i(8, 12)
-texture = ExtResource("5_c4w8v")
+drop_angle_degree_range = 45
+drop_velocity_range = Vector2i(200, 300)
+drop_scale_range = Vector2(0.04, 0.07)
+drop_texture = ExtResource("5_c4w8v")
+drop_gravity = 200.0
+puddle_texture = ExtResource("6_xwavj")
+puddle_base_scale = 3.0
+puddle_scale_growth = 0.05
