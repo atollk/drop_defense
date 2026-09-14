@@ -9,7 +9,7 @@ use tap::Tap;
 
 #[derive(GodotClass)]
 #[class(init, tool, base=Node2D)]
-struct FluidSplash {
+pub struct FluidSplash {
     base: Base<Node2D>,
 
     /// Random range amount of spawned particles. (min/max)
@@ -61,6 +61,12 @@ struct FluidSplash {
     puddles: Vec<Gd<SplashPuddle>>,
 }
 
+#[godot_api]
+impl FluidSplash {
+    #[signal]
+    pub fn animation_ended();
+}
+
 impl FluidSplash {
     fn on_drop_hit_ground(&mut self, drop: Gd<SplashDrop>) {
         let i = self.drops.iter().find_position(|x| **x == drop).unwrap().0;
@@ -77,10 +83,13 @@ impl FluidSplash {
             .0;
         self.puddles.remove(i);
         puddle.queue_free();
+        if self.puddles.is_empty() {
+            self.signals().animation_ended().emit();
+        }
     }
 
     pub fn spawn_drops(&mut self) {
-        let particle_amount = rand::random_range(self.particle_amount.x..self.particle_amount.y);
+        let particle_amount = rand::random_range(self.particle_amount.x..=self.particle_amount.y);
         for _ in 0..particle_amount {
             self.spawn_drop();
         }
@@ -91,7 +100,8 @@ impl FluidSplash {
         if let Some(texture) = &self.drop_texture {
             drop.set_texture(texture);
             drop.set_scale(
-                Vector2::ONE * rand::random_range(self.drop_scale_range.x..self.drop_scale_range.y),
+                Vector2::ONE
+                    * rand::random_range(self.drop_scale_range.x..=self.drop_scale_range.y),
             );
         }
         drop.bind_mut().tap_mut(|drop| {
@@ -100,7 +110,7 @@ impl FluidSplash {
                 deg_to_rad(self.drop_angle_degree_range as f64) as f32,
             ));
             drop.velocity =
-                rand::random_range(self.drop_velocity_range.x..self.drop_velocity_range.y) as f32;
+                rand::random_range(self.drop_velocity_range.x..=self.drop_velocity_range.y) as f32;
             drop.gravity = self.drop_gravity;
         });
         drop.signals()

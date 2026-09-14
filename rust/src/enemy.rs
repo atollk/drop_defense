@@ -1,3 +1,4 @@
+use crate::fluid_splash::FluidSplash;
 use crate::node_getter;
 use crate::singletons::GameStats;
 use godot::classes::input::CursorShape;
@@ -34,6 +35,9 @@ pub struct Enemy {
     /// The Y coordinate at which falling started.
     fall_height: f32,
 
+    /// The position at which this enemy was grabbed by the cursor.
+    grabbed_at: Option<Vector2>,
+
     base: Base<RigidBody2D>,
 }
 
@@ -69,8 +73,9 @@ impl Enemy {
 // General logic
 impl Enemy {
     node_getter!(Node2D, "GroundCast");
-    node_getter!(Node2D, "GrabPoint");
     node_getter!(AnimatedSprite2D, "Sprite");
+    node_getter!(FluidSplash, "BloodSplash");
+    node_getter!(FluidSplash, "LimbsSplash");
 
     /// RigidBody2D does not support settings its scale directly, so we have to use this workaround
     /// by setting the scale of every child individually.
@@ -120,8 +125,7 @@ impl Enemy {
     /// Connected to a signal whenever the sprite animation finishes.
     fn on_sprite_animation_finished(&mut self) {
         if self.state == EnemyState::Dying {
-            self.signals().died().emit();
-            self.base_mut().queue_free();
+            self.get_node_sprite().set_visible(false);
         }
         if self.state == EnemyState::StandingUp {
             self.set_state(EnemyState::Walking);
@@ -134,11 +138,15 @@ impl Enemy {
 
     /// A setter for `self.state` that makes sure the other invariants are updated correctly.
     fn set_state(&mut self, new_state: EnemyState) {
-        godot_print!("Enemy.set_state {:?}", new_state);
         self.state = new_state;
 
         // Mouse cursor
         self.update_cursor();
+        if self.state == EnemyState::Dragged {
+            self.grabbed_at = Some(self.base().get_local_mouse_position());
+        } else {
+            self.grabbed_at = None;
+        }
 
         // Gravity
         let gravity_scale = if self.state == EnemyState::Falling {
@@ -156,6 +164,15 @@ impl Enemy {
         self.get_node_sprite()
             .set_animation(self.state.animation_name());
         self.get_node_sprite().play();
+        if self.state == EnemyState::Dying {
+            self.signals().died().emit();
+            self.get_node_blood_splash().bind_mut().spawn_drops();
+            self.get_node_limbs_splash().bind_mut().spawn_drops();
+            self.get_node_blood_splash()
+                .signals()
+                .animation_ended()
+                .connect_other(self, |s| s.base_mut().queue_free());
+        }
     }
 
     /// Checks whether a falling enemy has hit the ground.
@@ -234,8 +251,7 @@ impl Enemy {
         const DAMPING_RATIO: f32 = 0.9;
         const MAX_FORCE: f32 = 8000.;
 
-        let local_mouse_pos =
-            self.base().get_local_mouse_position() - self.get_node_grab_point().get_position();
+        let local_mouse_pos = self.base().get_local_mouse_position() - self.grabbed_at.unwrap();
         let mass = self.base().get_mass();
         let k = STIFFNESS * mass;
         let c = 2. * DAMPING_RATIO * (k * mass).sqrt();
@@ -269,6 +285,7 @@ impl IRigidBody2D for Enemy {
             mouse_is_over: false,
             state: EnemyState::Walking,
             fall_height: f32::INFINITY,
+            grabbed_at: None,
             base,
         }
     }
