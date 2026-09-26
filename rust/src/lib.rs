@@ -1,7 +1,8 @@
-mod enemy;
+pub mod enemy;
 pub mod fluid_splash;
+pub mod portal;
 pub mod root_main;
-mod scene_game;
+pub mod scene_game;
 pub mod scene_main_menu;
 pub mod singletons;
 pub mod util;

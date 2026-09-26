@@ -1,19 +1,19 @@
 [gd_scene format=3 uid="uid://wqdsoe3mn6"]
 
-[ext_resource type="Shader" uid="uid://bivx402x7irde" path="res://scenes/portal_effect.gdshader" id="1_i4y8t"]
+[ext_resource type="Shader" uid="uid://bivx402x7irde" path="res://scenes/portal.gdshader" id="1_v0xau"]
 
 [sub_resource type="ShaderMaterial" id="ShaderMaterial_66ch4"]
-shader = ExtResource("1_i4y8t")
+shader = ExtResource("1_v0xau")
 shader_parameter/inner_color = Color(0.2154916, 0.32025552, 0.30281433, 1)
 shader_parameter/rim_color = Color(0.57464266, 0.52801996, 0.31233668, 1)
-shader_parameter/radius = 0.3650000173375
-shader_parameter/rim_width = 0.0650000030875
+shader_parameter/radius = 0.365
+shader_parameter/rim_width = 0.065
 shader_parameter/softness = 0.0070000003325
 shader_parameter/breathing_speed = 1.5000000223518
-shader_parameter/breathing_strength = 0.018000000855
+shader_parameter/breathing_strength = 0.018
 shader_parameter/noise_angle = 78.43600372571
 shader_parameter/noise_speed = 0.1590000075525
-shader_parameter/noise_strength = 0.027000001282499998
+shader_parameter/noise_strength = 0.02700000128249999
 
 [sub_resource type="Gradient" id="Gradient_sk18m"]
 
@@ -25,9 +25,20 @@ noise = SubResource("FastNoiseLite_nj2p1")
 color_ramp = SubResource("Gradient_sk18m")
 seamless = true
 
-[node name="PortalEffect" type="Node2D" unique_id=807871335]
+[sub_resource type="CapsuleShape2D" id="CapsuleShape2D_vh74b"]
+radius = 191.0
+height = 680.0
+
+[node name="PortalEffect" type="Portal" unique_id=1336740058]
+transform_duration_ms = 150
 
 [node name="Sprite2D" type="Sprite2D" parent="." unique_id=1663122532]
 texture_repeat = 2
 material = SubResource("ShaderMaterial_66ch4")
 texture = SubResource("NoiseTexture2D_7vql0")
+
+[node name="Area2D" type="Area2D" parent="." unique_id=1740428784]
+
+[node name="CollisionShape2D" type="CollisionShape2D" parent="Area2D" unique_id=651261576]
+position = Vector2(-1, -143)
+shape = SubResource("CapsuleShape2D_vh74b")
