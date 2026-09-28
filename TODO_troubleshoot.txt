@@ -1,0 +1,22 @@
+● Here's the exact test, step by step:
+
+  1. Confirm target_tmp and target will be on the same filesystem (required for mv to be a true atomic rename instead of copy+delete):
+  cd ~/Projects/git/drop_defense/rust
+  df target/debug/libdrop_defense.so
+  As long as you put target_tmp inside ~/Projects/git/drop_defense/rust/ too, it'll be the same mount — no need to check further.
+
+  2. Fully quit Godot, then relaunch the editor normally and open the project (this gets you to a clean baseline).
+
+  3. From now on, never run plain cargo build. Use this instead, every time you want to rebuild while the editor stays open:
+  cd ~/Projects/git/drop_defense/rust
+  cargo build --target-dir target_tmp && mv target_tmp/debug/libdrop_defense.so target/debug/libdrop_defense.so
+  (First run will be a full build since target_tmp starts empty; subsequent runs will be incremental and fast, same as normal.)
+
+  4. Trigger the crash scenario the same way you did before — edit example_script.rs, save, run the command above instead of cargo build, and watch the editor. Do this a handful of times in a row (the crash was intermittent, so one clean run doesn't prove much — try at least 4-5 rebuild cycles).
+
+  What tells you something:
+  - If it crashes anyway → the mv swap doesn't fix it, and my in-place-overwrite theory is wrong (or incomplete) — worth telling me so I can look elsewhere.
+  - If it survives repeatedly where plain cargo build used to crash it → that's a strong signal the workaround applies here too, and it's worth mentioning on #115496.
+
+  One gotcha: don't rm -rf target_tmp between runs — deleting and recreating it works fine, but there's no need, and doing so throws away incremental build state and makes every rebuild slow.
+

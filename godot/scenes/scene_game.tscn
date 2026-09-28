@@ -1,6 +1,7 @@
 [gd_scene format=3 uid="uid://dv8iqur84lkt5"]
 
 [ext_resource type="Texture2D" uid="uid://coavis1t1uvkt" path="res://assets/game_bg.png" id="1_1bfyv"]
+[ext_resource type="PackedScene" uid="uid://wqdsoe3mn6" path="res://scenes/portal.tscn" id="2_6ecnt"]
 
 [sub_resource type="Curve2D" id="Curve2D_vh74b"]
 _data = {
@@ -64,3 +65,17 @@ color = Color(0, 1, 0, 1)
 
 [node name="SpawnTimer" type="Timer" parent="." unique_id=435115490]
 one_shot = true
+
+[node name="Portals" type="Node2D" parent="." unique_id=1076215336]
+
+[node name="Left" parent="Portals" unique_id=1336740058 instance=ExtResource("2_6ecnt")]
+position = Vector2(184, 399)
+scale = Vector2(0.5, 0.5)
+
+[node name="Center" parent="Portals" unique_id=546676530 instance=ExtResource("2_6ecnt")]
+position = Vector2(477, 397)
+scale = Vector2(0.5, 0.5)
+
+[node name="Right" parent="Portals" unique_id=850291923 instance=ExtResource("2_6ecnt")]
+position = Vector2(810, 398)
+scale = Vector2(0.5, 0.5)

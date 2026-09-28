@@ -180,6 +180,9 @@ animations = [{
 radius = 77.5
 height = 308.00003
 
+[sub_resource type="RectangleShape2D" id="RectangleShape2D_vh74b"]
+size = Vector2(104, 20)
+
 [node name="Enemy" type="Enemy" unique_id=1915612589]
 collision_mask = 0
 input_pickable = true
@@ -193,7 +196,7 @@ sprite_frames = SubResource("SpriteFrames_q3jpm")
 animation = &"stand"
 autoplay = "walk"
 
-[node name="CollisionShape2D" type="CollisionShape2D" parent="." unique_id=1666332256]
+[node name="BodyShape" type="CollisionShape2D" parent="." unique_id=1666332256]
 position = Vector2(2, -147)
 shape = SubResource("CapsuleShape2D_vh74b")
 
@@ -234,3 +237,11 @@ drop_texture = ExtResource("7_nenq2")
 drop_gravity = 250.0
 puddle_base_scale = 3.0
 puddle_scale_growth = 0.05
+
+[node name="Feet" type="Area2D" parent="." unique_id=2023547636]
+position = Vector2(2, -10)
+collision_layer = 4
+collision_mask = 0
+
+[node name="FeetShape" type="CollisionShape2D" parent="Feet" unique_id=1716717909]
+shape = SubResource("RectangleShape2D_vh74b")

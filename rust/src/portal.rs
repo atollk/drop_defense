@@ -1,6 +1,7 @@
-use crate::{node_getter, node_getter_named};
+use crate::node_getter;
+use godot::classes::notify::{CanvasItemNotification, NodeNotification};
 use godot::classes::tween::{EaseType, TransitionType};
-use godot::classes::{Area2D, CollisionShape2D, ShaderMaterial, Sprite2D, Tween};
+use godot::classes::{Area2D, ShaderMaterial, Sprite2D, Tween};
 use godot::prelude::*;
 use std::collections::HashMap;
 use std::time::Duration;
@@ -81,6 +82,17 @@ impl Portal {
     fn close(&mut self) {
         self.transform(0, Duration::from_millis(500));
     }
+
+    fn connect_signals(&mut self) {
+        self.get_node_area2_d()
+            .signals()
+            .area_entered()
+            .connect_other(self, |s, _| s.open());
+        self.get_node_area2_d()
+            .signals()
+            .area_exited()
+            .connect_other(self, |s, _| s.close());
+    }
 }
 
 type ShaderTransformValue<T> = Option<[T; 2]>;
@@ -129,13 +141,13 @@ impl INode2D for Portal {
 
     fn ready(&mut self) {
         self.close();
-        self.get_node_area2_d()
-            .signals()
-            .mouse_entered()
-            .connect_other(self, |s| s.open());
-        self.get_node_area2_d()
-            .signals()
-            .mouse_exited()
-            .connect_other(self, |s| s.close());
+        self.connect_signals();
+    }
+
+    fn on_notification(&mut self, what: CanvasItemNotification) {
+        // https://godot-rust.github.io/book/register/signals.html#signals-in-the-editor--hot-reload-interaction
+        if what == CanvasItemNotification::EXTENSION_RELOADED {
+            self.connect_signals();
+        }
     }
 }

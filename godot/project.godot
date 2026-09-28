@@ -30,6 +30,12 @@ project/assembly_name="drop_defense"
 
 enabled=PackedStringArray("res://addons/drawn_area_2d/plugin.cfg")
 
+[layer_names]
+
+2d_physics/layer_1="enemies"
+2d_physics/layer_2="ground"
+2d_physics/layer_3="enemy feet (portals)"
+
 [physics]
 
 3d/physics_engine="Jolt Physics"

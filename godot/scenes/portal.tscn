@@ -3,14 +3,15 @@
 [ext_resource type="Shader" uid="uid://bivx402x7irde" path="res://scenes/portal.gdshader" id="1_v0xau"]
 
 [sub_resource type="ShaderMaterial" id="ShaderMaterial_66ch4"]
+resource_local_to_scene = true
 shader = ExtResource("1_v0xau")
 shader_parameter/inner_color = Color(0.2154916, 0.32025552, 0.30281433, 1)
 shader_parameter/rim_color = Color(0.57464266, 0.52801996, 0.31233668, 1)
-shader_parameter/radius = 0.365
-shader_parameter/rim_width = 0.065
+shader_parameter/radius = 0.1
+shader_parameter/rim_width = 0.02
 shader_parameter/softness = 0.0070000003325
 shader_parameter/breathing_speed = 1.5000000223518
-shader_parameter/breathing_strength = 0.018
+shader_parameter/breathing_strength = 0.0
 shader_parameter/noise_angle = 78.43600372571
 shader_parameter/noise_speed = 0.1590000075525
 shader_parameter/noise_strength = 0.02700000128249999
@@ -38,6 +39,8 @@ material = SubResource("ShaderMaterial_66ch4")
 texture = SubResource("NoiseTexture2D_7vql0")
 
 [node name="Area2D" type="Area2D" parent="." unique_id=1740428784]
+collision_layer = 32768
+collision_mask = 4
 
 [node name="CollisionShape2D" type="CollisionShape2D" parent="Area2D" unique_id=651261576]
 position = Vector2(-1, -143)
