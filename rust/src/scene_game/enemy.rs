@@ -1,8 +1,10 @@
-use crate::fluid_splash::FluidSplash;
 use crate::node_getter;
+use crate::scene_game::fluid_splash::FluidSplash;
 use crate::singletons::GameStats;
 use godot::classes::input::CursorShape;
-use godot::classes::{AnimatedSprite2D, IRigidBody2D, Input, Path2D, RayCast2D, RigidBody2D};
+use godot::classes::{
+    AnimatedSprite2D, IRigidBody2D, Input, InputEventMouseButton, Path2D, RayCast2D, RigidBody2D,
+};
 use godot::prelude::*;
 use itertools::Itertools;
 
@@ -223,6 +225,46 @@ impl Enemy {
 
 // Dragging / Mouse Cursor logic
 impl Enemy {
+    /// Handles mouse button events (for grabbing enemies).
+    pub fn drag_on_mouse_event(button_down: bool, enemies: impl Iterator<Item = Gd<Enemy>>) {
+        let enemies_by_state = enemies
+            .map(|enemy| {
+                let state = enemy.bind().get_state();
+                (state, enemy)
+            })
+            .into_group_map();
+        if button_down {
+            if enemies_by_state.get(&EnemyState::Dragged).is_some() {
+                panic!("We were dragging an enemy already and sent a mouse press during that.")
+            }
+            const DRAGGABLE_STATES: [EnemyState; 4] = [
+                EnemyState::Walking,
+                EnemyState::Attacking,
+                EnemyState::StandingUp,
+                EnemyState::Falling,
+            ];
+            let draggable_enemies = DRAGGABLE_STATES
+                .iter()
+                .filter_map(|state| enemies_by_state.get(state))
+                .flatten();
+            const DRAG_ENEMIES_AT_ONCE: usize = 1;
+            let mut dragged_enemies = draggable_enemies
+                .filter(|enemy| enemy.bind().has_mouse_is_over())
+                .take(DRAG_ENEMIES_AT_ONCE)
+                .cloned()
+                .collect_vec();
+            for enemy in dragged_enemies.iter_mut() {
+                enemy.bind_mut().start_dragged();
+            }
+        } else {
+            if let Some(dragged_enemies) = enemies_by_state.get(&EnemyState::Dragged) {
+                for mut enemy in dragged_enemies.iter().cloned() {
+                    enemy.bind_mut().stop_dragged();
+                }
+            }
+        }
+    }
+
     fn update_cursor(&self) {
         let shape = if self.state == EnemyState::Dragged {
             CursorShape::MOVE

@@ -1,12 +1,9 @@
-use crate::enemy::{Enemy, EnemyState};
+use crate::scene_game::draggable_enemy_group::DraggableEnemyGroup;
+use crate::scene_game::enemy::Enemy;
 use crate::singletons::GameStats;
 use crate::{node_getter, node_getter_named};
-use godot::classes::{
-    CollisionPolygon2D, ColorRect, InputEvent, InputEventMouseButton, Path2D, Sprite2D,
-    StaticBody2D, Timer,
-};
+use godot::classes::{CollisionPolygon2D, ColorRect, Path2D, Sprite2D, StaticBody2D, Timer};
 use godot::prelude::*;
-use itertools::Itertools;
 
 #[derive(GodotClass)]
 #[class(init, base=Node2D)]
@@ -18,7 +15,7 @@ impl SceneGame {
     node_getter!(Sprite2D, "Background");
     node_getter!(Path2D, "WalkPath");
     node_getter!(StaticBody2D, "GroundBody");
-    node_getter!(Node2D, "Enemies");
+    node_getter!(DraggableEnemyGroup, "Enemies");
     node_getter_named!(ColorRect, "UI/LifeBarRed", get_node_life_bar_red);
     node_getter_named!(ColorRect, "UI/LifeBarGreen", get_node_life_bar_green);
     node_getter!(Timer, "SpawnTimer");
@@ -65,7 +62,7 @@ impl SceneGame {
             enemy.walk_path = Some(self.get_node_walk_path());
             enemy.health = 500;
         }
-        self.get_node_enemies().add_child(&enemy_node);
+        self.get_node_enemies().bind_mut().add_enemy(enemy_node);
     }
 
     /// Updates the health bar.
@@ -89,50 +86,6 @@ impl SceneGame {
             .done();
         self.spawn_enemy();
     }
-
-    /// Handles mouse button events (for grabbing enemies).
-    fn on_mouse_button_event(&mut self, event: Gd<InputEventMouseButton>) {
-        let enemies_by_state = self
-            .get_node_enemies()
-            .get_children()
-            .iter_shared()
-            .map(|enemy| enemy.cast::<Enemy>())
-            .map(|enemy| {
-                let state = enemy.bind().get_state();
-                (state, enemy)
-            })
-            .into_group_map();
-        if event.is_pressed() {
-            if enemies_by_state.get(&EnemyState::Dragged).is_some() {
-                panic!("We were dragging an enemy already and sent a mouse press during that.")
-            }
-            const DRAGGABLE_STATES: [EnemyState; 4] = [
-                EnemyState::Walking,
-                EnemyState::Attacking,
-                EnemyState::StandingUp,
-                EnemyState::Falling,
-            ];
-            let draggable_enemies = DRAGGABLE_STATES
-                .iter()
-                .filter_map(|state| enemies_by_state.get(state))
-                .flatten();
-            const DRAG_ENEMIES_AT_ONCE: usize = 1;
-            let mut dragged_enemies = draggable_enemies
-                .filter(|enemy| enemy.bind().has_mouse_is_over())
-                .take(DRAG_ENEMIES_AT_ONCE)
-                .cloned()
-                .collect_vec();
-            for enemy in dragged_enemies.iter_mut() {
-                enemy.bind_mut().start_dragged();
-            }
-        } else if event.is_released() {
-            if let Some(dragged_enemies) = enemies_by_state.get(&EnemyState::Dragged) {
-                for mut enemy in dragged_enemies.iter().cloned() {
-                    enemy.bind_mut().stop_dragged();
-                }
-            }
-        }
-    }
 }
 
 #[godot_api]
@@ -150,11 +103,5 @@ impl INode2D for SceneGame {
 
     fn process(&mut self, _delta: f64) {
         self.update_health_bar();
-    }
-
-    fn input(&mut self, event: Gd<InputEvent>) {
-        if let Ok(mouse_button_event) = event.try_cast::<InputEventMouseButton>() {
-            self.on_mouse_button_event(mouse_button_event);
-        }
     }
 }

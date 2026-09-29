@@ -1,4 +1,4 @@
-use crate::scene_game::SceneGame;
+use crate::scene_game::scene_game::SceneGame;
 use crate::scene_main_menu::SceneMainMenu;
 use godot::global::Error;
 use godot::prelude::*;
