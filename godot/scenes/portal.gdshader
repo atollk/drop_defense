@@ -17,9 +17,6 @@ uniform float noise_angle : hint_range(0, 360);
 uniform float noise_speed: hint_range(0, 1);
 uniform float noise_strength : hint_range(0.0, 0.1);
 
-void vertex() {
-    // Called for every vertex the material is visible on.
-}
 
 vec2 rotate(vec2 v, float angle)
 {
@@ -35,7 +32,7 @@ void fragment() {
     float noise_offset = noise_strength * texture(TEXTURE, UV + noise_vector).r;
     dist += noise_offset;
 
-    // Breating
+    // Breathing
     float breathe_offset = breathing_strength * sin(TIME * breathing_speed);
     dist += breathe_offset;
 
@@ -51,7 +48,3 @@ void fragment() {
     COLOR = vec4(vec3(rim_color * rim_mask + inner_color * inner_mask), outer_mask);
 }
 
-// void light() {
-// 	// Called for every pixel for every light affecting the CanvasItem.
-// 	// Uncomment to replace the default light processing function with this one.
-// }

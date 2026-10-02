@@ -1,8 +1,9 @@
 use crate::node_getter;
-use godot::classes::notify::{CanvasItemNotification, NodeNotification};
+use godot::classes::notify::CanvasItemNotification;
 use godot::classes::tween::{EaseType, TransitionType};
-use godot::classes::{Area2D, ShaderMaterial, Sprite2D, Tween};
+use godot::classes::{Area2D, CircleShape2D, CollisionShape2D, ShaderMaterial, Sprite2D, Tween};
 use godot::prelude::*;
+use itertools::Itertools;
 use std::collections::HashMap;
 use std::time::Duration;
 
@@ -25,7 +26,6 @@ pub struct Portal {
 
 impl Portal {
     node_getter!(Sprite2D, "Sprite2D");
-    node_getter!(Area2D, "Area2D");
 
     fn transform(&mut self, target_state: usize, duration: Duration) {
         let sprite_material = self
@@ -83,15 +83,55 @@ impl Portal {
         self.transform(0, Duration::from_millis(500));
     }
 
+    fn find_area_child(&self) -> Option<Gd<Area2D>> {
+        self.base()
+            .get_children()
+            .iter_shared()
+            .filter_map(|child| child.try_cast::<Area2D>().ok())
+            .exactly_one()
+            .ok()
+    }
+
+    fn on_child_entered(&mut self, _child: Gd<Node>) {
+        if let Some(area_child) = self.find_area_child() {
+            area_child
+                .signals()
+                .area_entered()
+                .connect_other(self, |s, _| s.open());
+            area_child
+                .signals()
+                .area_exited()
+                .connect_other(self, |s, _| s.close());
+        }
+        self.base_mut().update_configuration_warnings();
+    }
+
     fn connect_signals(&mut self) {
-        self.get_node_area2_d()
+        self.base()
             .signals()
-            .area_entered()
-            .connect_other(self, |s, _| s.open());
-        self.get_node_area2_d()
-            .signals()
-            .area_exited()
-            .connect_other(self, |s, _| s.close());
+            .child_entered_tree()
+            .connect_other(self, Self::on_child_entered);
+    }
+
+    /// Spawns a new Area2D node that covers the visible area of the portal.
+    fn spawn_portal_area_node(&mut self) {
+        let shape = {
+            let mut shape = CircleShape2D::new_gd();
+            shape.set_radius(1.0);
+            shape
+        };
+        let shape_node = {
+            let mut shape_node = CollisionShape2D::new_alloc();
+            shape_node.set_shape(&shape);
+            shape_node.set_scale(Vector2::ONE); // TODO
+            shape_node
+        };
+        let area_node = {
+            let mut area_node = Area2D::new_alloc();
+            area_node.add_child(&shape_node);
+            area_node
+        };
+        self.base_mut().add_child(&area_node);
     }
 }
 
@@ -142,6 +182,7 @@ impl INode2D for Portal {
     fn ready(&mut self) {
         self.close();
         self.connect_signals();
+        self.spawn_portal_area_node();
     }
 
     fn on_notification(&mut self, what: CanvasItemNotification) {
@@ -149,5 +190,16 @@ impl INode2D for Portal {
         if what == CanvasItemNotification::EXTENSION_RELOADED {
             self.connect_signals();
         }
+    }
+
+    fn get_configuration_warnings(&self) -> PackedStringArray {
+        let mut warnings = PackedStringArray::new();
+        let area_child = self.find_area_child();
+        if area_child.is_none() {
+            warnings.push(
+                "Portal needs to have exactly one Area2D child for opening/closing proximity",
+            );
+        }
+        warnings
     }
 }

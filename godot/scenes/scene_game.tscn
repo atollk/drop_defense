@@ -16,6 +16,10 @@ normal = Vector2(1, 0)
 normal = Vector2(-1, 0)
 distance = -1280.0
 
+[sub_resource type="CapsuleShape2D" id="CapsuleShape2D_vh74b"]
+radius = 200.0
+height = 1216.0
+
 [node name="SceneGame" type="SceneGame" unique_id=741901120]
 
 [node name="Background" type="Sprite2D" parent="." unique_id=38236012]
@@ -69,13 +73,31 @@ one_shot = true
 [node name="Portals" type="Node2D" parent="." unique_id=1076215336]
 
 [node name="Left" parent="Portals" unique_id=1336740058 instance=ExtResource("2_6ecnt")]
-position = Vector2(184, 399)
-scale = Vector2(0.5, 0.5)
+position = Vector2(177, 435)
+scale = Vector2(0.5, 0.25)
 
-[node name="Center" parent="Portals" unique_id=546676530 instance=ExtResource("2_6ecnt")]
-position = Vector2(477, 397)
-scale = Vector2(0.5, 0.5)
+[node name="Area2D" type="Area2D" parent="Portals/Left" unique_id=1592311076]
 
-[node name="Right" parent="Portals" unique_id=850291923 instance=ExtResource("2_6ecnt")]
-position = Vector2(810, 398)
-scale = Vector2(0.5, 0.5)
+[node name="CollisionShape2D" type="CollisionShape2D" parent="Portals/Left/Area2D" unique_id=949485903]
+position = Vector2(4, -404)
+shape = SubResource("CapsuleShape2D_vh74b")
+
+[node name="Center" parent="Portals" unique_id=1327182884 instance=ExtResource("2_6ecnt")]
+position = Vector2(477, 434)
+scale = Vector2(0.5, 0.25)
+
+[node name="Area2D" type="Area2D" parent="Portals/Center" unique_id=1769774421]
+
+[node name="CollisionShape2D" type="CollisionShape2D" parent="Portals/Center/Area2D" unique_id=435672773]
+position = Vector2(4, -404)
+shape = SubResource("CapsuleShape2D_vh74b")
+
+[node name="Center2" parent="Portals" unique_id=842969871 instance=ExtResource("2_6ecnt")]
+position = Vector2(807, 435)
+scale = Vector2(0.5, 0.25)
+
+[node name="Area2D" type="Area2D" parent="Portals/Center2" unique_id=608453268]
+
+[node name="CollisionShape2D" type="CollisionShape2D" parent="Portals/Center2/Area2D" unique_id=883986482]
+position = Vector2(4, -404)
+shape = SubResource("CapsuleShape2D_vh74b")

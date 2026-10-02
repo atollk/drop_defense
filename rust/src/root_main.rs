@@ -31,6 +31,7 @@ impl ActiveSceneType {
 
 enum ActiveSceneInstance {
     MainMenu(Gd<SceneMainMenu>),
+    #[expect(dead_code)]
     Game(Gd<SceneGame>),
 }
 
