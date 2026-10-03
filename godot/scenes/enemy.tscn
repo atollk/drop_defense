@@ -1,12 +1,20 @@
 [gd_scene format=3 uid="uid://bmqpde5ecmmsg"]
 
 [ext_resource type="Texture2D" uid="uid://c68el4823qg2a" path="res://assets/enemy_attack.png" id="1_md0e3"]
+[ext_resource type="Shader" uid="uid://dd1jlqlin2r0m" path="res://scenes/enemy.gdshader" id="1_md484"]
 [ext_resource type="Texture2D" uid="uid://dc3hskt6grhqd" path="res://assets/enemy_walk.png" id="2_4ra3w"]
 [ext_resource type="Texture2D" uid="uid://b2u2li0rojubc" path="res://assets/enemy_die.png" id="2_5uy6h"]
 [ext_resource type="Texture2D" uid="uid://cgcgg4y508rb6" path="res://assets/enemy_standup.png" id="4_c4w8v"]
 [ext_resource type="Texture2D" uid="uid://bn5ieqtql85hf" path="res://assets/water-drop.svg" id="5_c4w8v"]
 [ext_resource type="Texture2D" uid="uid://bb0kxx25r2j88" path="res://assets/water-puddle.svg" id="6_xwavj"]
 [ext_resource type="Texture2D" uid="uid://bj8fjmqvxhl4s" path="res://assets/stick_part.png" id="7_nenq2"]
+
+[sub_resource type="ShaderMaterial" id="ShaderMaterial_0puub"]
+resource_local_to_scene = true
+shader = ExtResource("1_md484")
+shader_parameter/portal_center_pos = Vector2(0, 0)
+shader_parameter/portal_radii = Vector2(0, 0)
+shader_parameter/falling_into_portal = false
 
 [sub_resource type="AtlasTexture" id="AtlasTexture_5uy6h"]
 atlas = ExtResource("1_md0e3")
@@ -191,6 +199,7 @@ lock_rotation = true
 linear_damp = 1.0
 
 [node name="Sprite" type="AnimatedSprite2D" parent="." unique_id=1570912286]
+material = SubResource("ShaderMaterial_0puub")
 position = Vector2(-4.499998, -151)
 sprite_frames = SubResource("SpriteFrames_q3jpm")
 animation = &"stand"

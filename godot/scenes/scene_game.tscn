@@ -44,6 +44,7 @@ shape = SubResource("WorldBoundaryShape2D_vh74b")
 shape = SubResource("WorldBoundaryShape2D_1bfyv")
 
 [node name="Enemies" type="DraggableEnemyGroup" parent="." unique_id=1695546235]
+z_index = 1
 
 [node name="UI" type="Control" parent="." unique_id=117352088]
 layout_mode = 3
@@ -77,6 +78,8 @@ position = Vector2(177, 435)
 scale = Vector2(0.5, 0.25)
 
 [node name="Area2D" type="Area2D" parent="Portals/Left" unique_id=1592311076]
+collision_layer = 0
+collision_mask = 4
 
 [node name="CollisionShape2D" type="CollisionShape2D" parent="Portals/Left/Area2D" unique_id=949485903]
 position = Vector2(4, -404)
@@ -87,6 +90,8 @@ position = Vector2(477, 434)
 scale = Vector2(0.5, 0.25)
 
 [node name="Area2D" type="Area2D" parent="Portals/Center" unique_id=1769774421]
+collision_layer = 0
+collision_mask = 4
 
 [node name="CollisionShape2D" type="CollisionShape2D" parent="Portals/Center/Area2D" unique_id=435672773]
 position = Vector2(4, -404)
@@ -97,6 +102,8 @@ position = Vector2(807, 435)
 scale = Vector2(0.5, 0.25)
 
 [node name="Area2D" type="Area2D" parent="Portals/Center2" unique_id=608453268]
+collision_layer = 0
+collision_mask = 4
 
 [node name="CollisionShape2D" type="CollisionShape2D" parent="Portals/Center2/Area2D" unique_id=883986482]
 position = Vector2(4, -404)

@@ -79,7 +79,7 @@ impl SceneGame {
 
     /// Spawns a new enemy and resets the timer.
     fn on_spawn_timeout(&mut self) {
-        let spawn_time = 1.0;
+        let spawn_time = 5.0;
         self.get_node_spawn_timer()
             .start_ex()
             .time_sec(spawn_time)

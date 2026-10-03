@@ -1,7 +1,11 @@
 use crate::node_getter;
+use crate::scene_game::enemy::Enemy;
+use godot::classes::node::InternalMode;
 use godot::classes::notify::CanvasItemNotification;
 use godot::classes::tween::{EaseType, TransitionType};
-use godot::classes::{Area2D, CircleShape2D, CollisionShape2D, ShaderMaterial, Sprite2D, Tween};
+use godot::classes::{
+    Area2D, CanvasItem, CircleShape2D, CollisionShape2D, ShaderMaterial, Sprite2D, Tween,
+};
 use godot::prelude::*;
 use itertools::Itertools;
 use std::collections::HashMap;
@@ -83,25 +87,53 @@ impl Portal {
         self.transform(0, Duration::from_millis(500));
     }
 
-    fn find_area_child(&self) -> Option<Gd<Area2D>> {
+    fn find_swallow_area(&self) -> Result<Gd<Area2D>, String> {
         self.base()
             .get_children()
             .iter_shared()
             .filter_map(|child| child.try_cast::<Area2D>().ok())
             .exactly_one()
-            .ok()
+            .map_err(|e| e.to_string())
     }
 
     fn on_child_entered(&mut self, _child: Gd<Node>) {
-        if let Some(area_child) = self.find_area_child() {
+        if let Some(area_child) = self.find_swallow_area().ok() {
             area_child
                 .signals()
                 .area_entered()
-                .connect_other(self, |s, _| s.open());
+                .connect_other(self, |s, _| {
+                    s.open();
+                });
+            area_child
+                .signals()
+                .area_entered()
+                .connect_self(|area_child, enemy| {
+                    // TODO: It would be nicer if this was done with an interface instead of the specific struct; and if we didn't have to go through the parent.
+                    if let Ok(enemy) = enemy.get_parent().unwrap().try_cast::<Enemy>() {
+                        let sprite = enemy.find_child("Sprite").unwrap().cast::<CanvasItem>();
+                        let mut material = sprite.get_material().unwrap().cast::<ShaderMaterial>();
+                        material.set_shader_parameter(
+                            "portal_center_pos",
+                            &area_child.get_global_position().to_variant(),
+                        );
+                        material.set_shader_parameter(
+                            "portal_radii",
+                            &area_child
+                                .get_child(0)
+                                .unwrap()
+                                .cast::<Node2D>()
+                                .get_global_scale()
+                                .to_variant(),
+                        );
+                        material.set_shader_parameter("falling_into_portal", &true.to_variant());
+                    }
+                });
             area_child
                 .signals()
                 .area_exited()
-                .connect_other(self, |s, _| s.close());
+                .connect_other(self, |s, _| {
+                    s.close();
+                });
         }
         self.base_mut().update_configuration_warnings();
     }
@@ -122,16 +154,23 @@ impl Portal {
         };
         let shape_node = {
             let mut shape_node = CollisionShape2D::new_alloc();
+            shape_node.set_name("CollisionShape2D");
             shape_node.set_shape(&shape);
             shape_node.set_scale(Vector2::ONE); // TODO
             shape_node
         };
         let area_node = {
             let mut area_node = Area2D::new_alloc();
+            area_node.set_name("_PortalArea");
             area_node.add_child(&shape_node);
+            area_node.set_collision_layer(0);
+            area_node.set_visibility_layer(0);
             area_node
         };
-        self.base_mut().add_child(&area_node);
+        self.base_mut()
+            .add_child_ex(&area_node)
+            .internal(InternalMode::FRONT)
+            .done();
     }
 }
 
@@ -194,11 +233,11 @@ impl INode2D for Portal {
 
     fn get_configuration_warnings(&self) -> PackedStringArray {
         let mut warnings = PackedStringArray::new();
-        let area_child = self.find_area_child();
-        if area_child.is_none() {
-            warnings.push(
-                "Portal needs to have exactly one Area2D child for opening/closing proximity",
-            );
+        let area_child = self.find_swallow_area();
+        if let Err(e) = area_child {
+            warnings.push(&format!(
+                "Portal needs to have exactly one Area2D child for opening/closing proximity. {e}"
+            ));
         }
         warnings
     }
