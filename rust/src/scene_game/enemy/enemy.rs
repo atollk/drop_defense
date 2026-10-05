@@ -1,10 +1,13 @@
-use crate::node_getter;
-use crate::scene_game::fluid_splash::FluidSplash;
+use super::fluid_splash::FluidSplash;
+use crate::scene_game::enemy::draggable::Draggable;
 use crate::singletons::GameStats;
-use godot::classes::input::CursorShape;
-use godot::classes::{AnimatedSprite2D, IRigidBody2D, Input, Path2D, RayCast2D, RigidBody2D};
+use crate::{node_getter, node_getter_named};
+use godot::classes::{
+    AnimatedSprite2D, CollisionShape2D, IRigidBody2D, Path2D, RayCast2D, RigidBody2D,
+};
 use godot::prelude::*;
 use itertools::Itertools;
+use tap::Tap;
 
 const FALLING_GRAVITY: f32 = 1.5;
 
@@ -26,17 +29,11 @@ pub struct Enemy {
     /// The progress (from 0 to 1) along [path].
     progress: f64,
 
-    /// Whether the mouse is inside this enemy's area.
-    mouse_is_over: bool,
-
     /// State of the enemy
     state: EnemyState,
 
     /// The Y coordinate at which falling started.
     fall_height: f32,
-
-    /// The position at which this enemy was grabbed by the cursor.
-    grabbed_at: Option<Vector2>,
 
     base: Base<RigidBody2D>,
 }
@@ -73,13 +70,15 @@ impl Enemy {
 // General logic
 impl Enemy {
     node_getter!(Node2D, "GroundCast");
+    node_getter!(CollisionShape2D, "BodyShape");
     node_getter!(AnimatedSprite2D, "Sprite");
     node_getter!(FluidSplash, "BloodSplash");
     node_getter!(FluidSplash, "LimbsSplash");
+    node_getter_named!(Draggable, "Draggable", pub get_node_draggable);
 
     /// RigidBody2D does not support settings its scale directly, so we have to use this workaround
     /// by setting the scale of every child individually.
-    pub fn set_scale(&mut self, scale: Vector2) {
+    pub fn set_scale_recursively(&mut self, scale: Vector2) {
         for child in self.base().get_children().iter_shared() {
             if let Ok(mut child) = child.try_cast::<Node2D>() {
                 let old_scale = child.get_scale();
@@ -140,12 +139,17 @@ impl Enemy {
     fn set_state(&mut self, new_state: EnemyState) {
         self.state = new_state;
 
-        // Mouse cursor
-        self.update_cursor();
-        if self.state == EnemyState::Dragged {
-            self.grabbed_at = Some(self.base().get_local_mouse_position());
-        } else {
-            self.grabbed_at = None;
+        // Draggable
+        {
+            let mut draggable = self.get_node_draggable();
+            let mut draggable = draggable.bind_mut();
+            draggable.can_be_dragged = matches!(
+                self.state,
+                EnemyState::Walking
+                    | EnemyState::Attacking
+                    | EnemyState::StandingUp
+                    | EnemyState::Falling
+            );
         }
 
         // Gravity
@@ -221,99 +225,6 @@ impl Enemy {
     }
 }
 
-// Dragging / Mouse Cursor logic
-impl Enemy {
-    /// Handles mouse button events (for grabbing enemies).
-    pub fn drag_on_mouse_event(button_down: bool, enemies: impl Iterator<Item = Gd<Enemy>>) {
-        let enemies_by_state = enemies
-            .map(|enemy| {
-                let state = enemy.bind().get_state();
-                (state, enemy)
-            })
-            .into_group_map();
-        if button_down {
-            if enemies_by_state.get(&EnemyState::Dragged).is_some() {
-                panic!("We were dragging an enemy already and sent a mouse press during that.")
-            }
-            const DRAGGABLE_STATES: [EnemyState; 4] = [
-                EnemyState::Walking,
-                EnemyState::Attacking,
-                EnemyState::StandingUp,
-                EnemyState::Falling,
-            ];
-            let draggable_enemies = DRAGGABLE_STATES
-                .iter()
-                .filter_map(|state| enemies_by_state.get(state))
-                .flatten();
-            const DRAG_ENEMIES_AT_ONCE: usize = 1;
-            let mut dragged_enemies = draggable_enemies
-                .filter(|enemy| enemy.bind().has_mouse_is_over())
-                .take(DRAG_ENEMIES_AT_ONCE)
-                .cloned()
-                .collect_vec();
-            for enemy in dragged_enemies.iter_mut() {
-                enemy.bind_mut().start_dragged();
-            }
-        } else {
-            if let Some(dragged_enemies) = enemies_by_state.get(&EnemyState::Dragged) {
-                for mut enemy in dragged_enemies.iter().cloned() {
-                    enemy.bind_mut().stop_dragged();
-                }
-            }
-        }
-    }
-
-    fn update_cursor(&self) {
-        let shape = if self.state == EnemyState::Dragged {
-            CursorShape::MOVE
-        } else {
-            if self.mouse_is_over {
-                CursorShape::POINTING_HAND
-            } else {
-                CursorShape::ARROW
-            }
-        };
-        Input::singleton()
-            .set_default_cursor_shape_ex()
-            .shape(shape)
-            .done();
-    }
-
-    /// Connected to a signal whenever the mouse cursor enters or leaves the hitbox.
-    fn on_mouse_entered(&mut self, entered: bool) {
-        self.mouse_is_over = entered;
-        self.update_cursor();
-    }
-
-    /// Called in [physics_process] while the enemy is being dragged to apply the necessary forces.
-    fn drag_towards_cursor(&mut self, _delta: f64) {
-        const STIFFNESS: f32 = 600.; // how hard are we pulling
-        const DAMPING_RATIO: f32 = 0.9;
-        const MAX_FORCE: f32 = 8000.;
-
-        let local_mouse_pos = self.base().get_local_mouse_position() - self.grabbed_at.unwrap();
-        let mass = self.base().get_mass();
-        let k = STIFFNESS * mass;
-        let c = 2. * DAMPING_RATIO * (k * mass).sqrt();
-        let force = local_mouse_pos * k - self.base().get_linear_velocity() * c;
-        // No need to use delta: Forces are time-independent
-        self.base_mut()
-            .apply_central_force(force.limit_length(Some(MAX_FORCE)));
-    }
-
-    pub fn has_mouse_is_over(&self) -> bool {
-        self.mouse_is_over
-    }
-
-    pub fn start_dragged(&mut self) {
-        self.set_state(EnemyState::Dragged);
-    }
-
-    pub fn stop_dragged(&mut self) {
-        self.set_state(EnemyState::Falling);
-    }
-}
-
 #[godot_api]
 impl IRigidBody2D for Enemy {
     fn init(base: Base<Self::Base>) -> Self {
@@ -322,29 +233,40 @@ impl IRigidBody2D for Enemy {
             health: 0,
             speed: 10,
             progress: 0.0,
-            mouse_is_over: false,
-            state: EnemyState::Walking,
+            state: EnemyState::Dying, // has to be overwritten on ready
             fall_height: f32::INFINITY,
-            grabbed_at: None,
             base,
         }
     }
 
     fn ready(&mut self) {
-        self.set_scale(Vector2::new(0.5, 0.5));
+        self.get_node_draggable().tap_mut(|draggable| {
+            draggable
+                .signals()
+                .drag_started()
+                .connect_other(self, |s| s.set_state(EnemyState::Dragged));
+            draggable
+                .signals()
+                .drag_ended()
+                .connect_other(self, |s| s.set_state(EnemyState::Falling));
+            draggable
+                .bind_mut()
+                .set_shape(Some(self.get_node_body_shape().duplicate_node()));
+        });
 
-        self.base()
-            .signals()
-            .mouse_entered()
-            .connect_other(self, |s| s.on_mouse_entered(true));
-        self.base()
-            .signals()
-            .mouse_exited()
-            .connect_other(self, |s| s.on_mouse_entered(false));
         self.get_node_sprite()
             .signals()
             .animation_finished()
             .connect_other(self, Self::on_sprite_animation_finished);
+
+        self.set_state(EnemyState::Walking);
+
+        if self.base().get_scale() != Vector2::ONE {
+            godot_warn!(
+                "The scale of this Enemy is not 1. That's an issue because the physics will probably break. It should be set via Enemy.set_scale_recursively."
+            )
+        }
+        self.set_scale_recursively(Vector2::new(0.5, 0.5));
     }
 
     fn process(&mut self, delta: f64) {
@@ -359,9 +281,9 @@ impl IRigidBody2D for Enemy {
     }
 
     fn physics_process(&mut self, delta: f64) {
-        if self.state == EnemyState::Dragged {
-            self.drag_towards_cursor(delta);
-        }
+        self.get_node_draggable()
+            .bind_mut()
+            .drag_towards_cursor(&mut *self.base_mut(), delta);
 
         // Update fall height
         if self.state == EnemyState::Falling {

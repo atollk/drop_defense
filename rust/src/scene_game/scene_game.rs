@@ -1,5 +1,5 @@
-use crate::scene_game::draggable_enemy_group::DraggableEnemyGroup;
-use crate::scene_game::enemy::Enemy;
+use crate::scene_game::enemy::draggable_group::DraggableGroup;
+use crate::scene_game::enemy::enemy::Enemy;
 use crate::singletons::GameStats;
 use crate::{node_getter, node_getter_named};
 use godot::classes::{CollisionPolygon2D, ColorRect, Path2D, Sprite2D, StaticBody2D, Timer};
@@ -15,7 +15,7 @@ impl SceneGame {
     node_getter!(Sprite2D, "Background");
     node_getter!(Path2D, "WalkPath");
     node_getter!(StaticBody2D, "GroundBody");
-    node_getter!(DraggableEnemyGroup, "Enemies");
+    node_getter!(DraggableGroup, "Enemies");
     node_getter_named!(ColorRect, "UI/LifeBarRed", get_node_life_bar_red);
     node_getter_named!(ColorRect, "UI/LifeBarGreen", get_node_life_bar_green);
     node_getter!(Timer, "SpawnTimer");
@@ -62,7 +62,10 @@ impl SceneGame {
             enemy.walk_path = Some(self.get_node_walk_path());
             enemy.health = 500;
         }
-        self.get_node_enemies().bind_mut().add_enemy(enemy_node);
+        self.get_node_enemies().add_child(&enemy_node);
+        self.get_node_enemies()
+            .bind_mut()
+            .add_draggable(enemy_node.bind().get_node_draggable());
     }
 
     /// Updates the health bar.

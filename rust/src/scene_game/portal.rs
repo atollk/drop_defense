@@ -1,5 +1,5 @@
 use crate::node_getter;
-use crate::scene_game::enemy::Enemy;
+use crate::scene_game::enemy::enemy::Enemy;
 use godot::classes::node::InternalMode;
 use godot::classes::notify::CanvasItemNotification;
 use godot::classes::tween::{EaseType, TransitionType};

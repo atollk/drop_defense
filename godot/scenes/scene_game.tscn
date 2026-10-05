@@ -43,7 +43,7 @@ shape = SubResource("WorldBoundaryShape2D_vh74b")
 [node name="CollisionShape2D" type="CollisionShape2D" parent="RightWall" unique_id=1624372387]
 shape = SubResource("WorldBoundaryShape2D_1bfyv")
 
-[node name="Enemies" type="DraggableEnemyGroup" parent="." unique_id=1695546235]
+[node name="Enemies" type="DraggableGroup" parent="." unique_id=1961607748]
 z_index = 1
 
 [node name="UI" type="Control" parent="." unique_id=117352088]

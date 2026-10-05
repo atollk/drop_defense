@@ -1,5 +1,5 @@
 <component name="ProjectRunConfigurationManager">
-  <configuration default="false" name="Run drop_devense" type="ShConfigurationType">
+  <configuration default="false" name="Run drop_defense" type="ShConfigurationType">
     <option name="SCRIPT_TEXT" value="godot -d --path ./godot" />
     <option name="INDEPENDENT_SCRIPT_PATH" value="true" />
     <option name="SCRIPT_PATH" value="" />
