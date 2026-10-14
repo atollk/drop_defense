@@ -1,8 +1,8 @@
 use super::fluid_splash::FluidSplash;
 use crate::enemy_weapon::EnemyWeapon;
+use crate::node_getter_named;
 use crate::scene_game::enemy::draggable::Draggable;
 use crate::singletons::GameStats;
-use crate::{node_getter, node_getter_named};
 use godot::classes::{
     AnimatedSprite2D, AnimationPlayer, CollisionShape2D, IRigidBody2D, Path2D, RayCast2D,
     RigidBody2D, Sprite2D,
@@ -56,14 +56,14 @@ pub enum EnemyState {
 }
 
 impl EnemyState {
-    fn animation_name(&self) -> &'static str {
+    const fn animation_name(&self) -> &'static str {
         match self {
-            EnemyState::Walking => "walk",
-            EnemyState::Dragged => "stand",
-            EnemyState::Falling => "stand",
-            EnemyState::Attacking => "attack",
-            EnemyState::StandingUp => "standup",
-            EnemyState::Dying => "death",
+            EnemyState::Walking => "Walk",
+            EnemyState::Dragged => "Stand",
+            EnemyState::Falling => "Stand",
+            EnemyState::Attacking => "Attack",
+            EnemyState::StandingUp => "StandUp",
+            EnemyState::Dying => "Death",
         }
     }
 }
@@ -80,31 +80,44 @@ impl Enemy {
 
     #[func]
     pub fn set_weapon(&mut self, value: Option<Gd<EnemyWeapon>>) {
-        self.get_node_weapon_sprite().set_texture(
-            value
-                .as_ref()
-                .and_then(|weapon| weapon.bind().texture.clone())
-                .as_ref(),
-        );
-        self.weapon = value;
+        let Some(weapon) = value else { return };
+        self.get_node_weapon_sprite()
+            .set_texture(weapon.bind().texture.as_ref());
+        self.get_node_weapon_sprite()
+            .set_offset(weapon.bind().texture_offset);
+        self.weapon = Some(weapon);
     }
 }
 
 // General logic
 impl Enemy {
-    node_getter!(Node2D, "GroundCast");
-    node_getter!(CollisionShape2D, "BodyShape");
-    node_getter!(AnimatedSprite2D, "BodySprite");
-    node_getter!(AnimationPlayer, "AnimationPlayer");
-    node_getter!(FluidSplash, "BloodSplash");
-    node_getter!(FluidSplash, "LimbsSplash");
-    node_getter_named!(Draggable, "Draggable", pub get_node_draggable);
-    node_getter_named!(Sprite2D, "WeaponHand/Weapon", pub get_node_weapon_sprite);
+    node_getter_named!(Node2D, "Scaling/GroundCast", get_node_ground_cast);
+    node_getter_named!(CollisionShape2D, "BodyShape", get_node_body_shape);
+    node_getter_named!(AnimatedSprite2D, "Scaling/BodySprite", get_node_body_sprite);
+    node_getter_named!(
+        AnimationPlayer,
+        "Scaling/AnimationPlayer",
+        get_node_animation_player
+    );
+    node_getter_named!(FluidSplash, "Scaling/BloodSplash", get_node_blood_splash);
+    node_getter_named!(FluidSplash, "Scaling/LimbsSplash", get_node_limbs_splash);
+    node_getter_named!(Draggable, "Scaling/Draggable", pub get_node_draggable);
+    node_getter_named!(
+        Sprite2D,
+        "Scaling/WeaponHand/Weapon",
+        get_node_weapon_sprite
+    );
 
     /// RigidBody2D does not support settings its scale directly, so we have to use this workaround
     /// by setting the scale of every child individually.
     pub fn set_scale_recursively(&mut self, scale: Vector2) {
-        for child in self.base().get_children().iter_shared() {
+        let children: [_; 2] = self
+            .base()
+            .get_children()
+            .iter_shared()
+            .collect_array()
+            .expect("expected enemy to have exactly two children");
+        for child in children {
             if let Ok(mut child) = child.try_cast::<Node2D>() {
                 let old_scale = child.get_scale();
                 child.set_scale(scale);
@@ -147,13 +160,14 @@ impl Enemy {
     }
 
     /// Connected to a signal whenever the sprite animation finishes.
-    fn on_sprite_animation_finished(&mut self, animation_name: StringName) {
+    fn on_sprite_animation_finished(&mut self, _animation_name: StringName) {
         if self.state == EnemyState::Dying {
             self.get_node_body_sprite().set_visible(false);
         }
         if self.state == EnemyState::StandingUp {
             self.set_state(EnemyState::Walking);
         }
+        self.get_node_animation_player().play();
     }
 
     pub fn get_state(&self) -> EnemyState {
@@ -190,9 +204,10 @@ impl Enemy {
         self.base_mut().set_freeze_enabled(freeze_enabled);
 
         // Animation
-        self.get_node_body_sprite()
-            .set_animation(self.state.animation_name());
-        self.get_node_body_sprite().play();
+        self.get_node_animation_player()
+            .play_ex()
+            .name(self.state.animation_name())
+            .done();
         if self.state == EnemyState::Dying {
             self.signals().died().emit();
             self.get_node_blood_splash().bind_mut().spawn_drops();
@@ -280,14 +295,11 @@ impl IRigidBody2D for Enemy {
                 .set_shape(Some(self.get_node_body_shape().duplicate_node()));
         });
 
-        self.get_node_animation_player().tap_mut(|ap| {
-            ap.play_ex().name("EnemyWalk").done();
-            ap.signals()
-                .animation_finished()
-                .connect_other(self, Self::on_sprite_animation_finished);
-        });
+        self.get_node_animation_player()
+            .signals()
+            .animation_finished()
+            .connect_other(self, Self::on_sprite_animation_finished);
         self.get_node_body_sprite().stop();
-
         self.set_state(EnemyState::Walking);
 
         if self.base().get_scale() != Vector2::ONE {
@@ -295,13 +307,10 @@ impl IRigidBody2D for Enemy {
                 "The scale of this Enemy is not 1. That's an issue because the physics will probably break. It should be set via Enemy.set_scale_recursively."
             )
         }
-
-        self.base_mut().set_scale(Vector2::new(0.5, 0.5));
-        // self.set_scale_recursively(Vector2::new(0.5, 0.5));
+        self.set_scale_recursively(Vector2::new(0.5, 0.5));
     }
 
     fn process(&mut self, delta: f64) {
-        self.base_mut().set_scale(Vector2::new(0.5, 0.5));
         self.update_path_progress(delta / 100.0 * self.speed as f64);
         self.check_fall_ground();
 

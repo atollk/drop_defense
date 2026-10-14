@@ -1,6 +1,6 @@
 use godot::classes::{Resource, Texture2D};
 use godot::obj::Base;
-use godot::prelude::{Gd, GodotClass};
+use godot::prelude::{Gd, GodotClass, Vector2};
 
 #[derive(GodotClass)]
 #[class(init, base=Resource)]
@@ -9,5 +9,7 @@ pub struct EnemyWeapon {
     pub base_damage: i32,
     #[export]
     pub texture: Option<Gd<Texture2D>>,
+    #[export]
+    pub texture_offset: Vector2,
     base: Base<Resource>,
 }

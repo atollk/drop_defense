@@ -1,7 +1,8 @@
 [gd_resource type="EnemyWeapon" format=3 uid="uid://c1jxled6l64pm"]
 
-[ext_resource type="Texture2D" uid="uid://bgt2xu4hn4am3" path="res://assets/sword1.png" id="1_0w5r0"]
+[ext_resource type="Texture2D" uid="uid://dul5d4jusnnky" path="res://assets/weapon_sword.png" id="1_0w5r0"]
 
 [resource]
 base_damage = 20
 texture = ExtResource("1_0w5r0")
+texture_offset = Vector2(0, -80)
