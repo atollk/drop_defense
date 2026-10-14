@@ -192,7 +192,7 @@ loop_mode = 1
 tracks/0/type = "value"
 tracks/0/imported = false
 tracks/0/enabled = true
-tracks/0/path = NodePath("Body:animation")
+tracks/0/path = NodePath("BodySprite:animation")
 tracks/0/interp = 1
 tracks/0/loop_wrap = true
 tracks/0/keys = {
@@ -204,7 +204,7 @@ tracks/0/keys = {
 tracks/1/type = "value"
 tracks/1/imported = false
 tracks/1/enabled = true
-tracks/1/path = NodePath("Body:frame")
+tracks/1/path = NodePath("BodySprite:frame")
 tracks/1/interp = 1
 tracks/1/loop_wrap = false
 tracks/1/keys = {
@@ -243,7 +243,7 @@ length = 0.001
 tracks/0/type = "value"
 tracks/0/imported = false
 tracks/0/enabled = true
-tracks/0/path = NodePath("Body:animation")
+tracks/0/path = NodePath("BodySprite:animation")
 tracks/0/interp = 1
 tracks/0/loop_wrap = true
 tracks/0/keys = {
@@ -255,7 +255,7 @@ tracks/0/keys = {
 tracks/1/type = "value"
 tracks/1/imported = false
 tracks/1/enabled = true
-tracks/1/path = NodePath("Body:frame")
+tracks/1/path = NodePath("BodySprite:frame")
 tracks/1/interp = 1
 tracks/1/loop_wrap = true
 tracks/1/keys = {
@@ -306,7 +306,7 @@ gravity_scale = 0.0
 lock_rotation = true
 linear_damp = 1.0
 
-[node name="Body" type="AnimatedSprite2D" parent="." unique_id=1570912286]
+[node name="BodySprite" type="AnimatedSprite2D" parent="." unique_id=1570912286]
 material = SubResource("ShaderMaterial_0puub")
 position = Vector2(-4.499998, -151)
 sprite_frames = SubResource("SpriteFrames_q3jpm")
@@ -319,7 +319,6 @@ rotation = 4.9923124
 gizmo_extents = 20.0
 
 [node name="Weapon" type="Sprite2D" parent="WeaponHand" unique_id=356334329]
-position = Vector2(0.7933831, -18.957067)
 texture = ExtResource("6_ipns3")
 metadata/_edit_lock_ = true
 
@@ -327,9 +326,9 @@ metadata/_edit_lock_ = true
 libraries/ = SubResource("AnimationLibrary_ipns3")
 
 [node name="BodyShape" type="CollisionShape2D" parent="." unique_id=1666332256]
-visible = false
 position = Vector2(2, -147)
-rotation = 0.0009537287
+rotation = 0.00095372874
+scale = Vector2(0.99999994, 0.99999994)
 shape = SubResource("CapsuleShape2D_vh74b")
 
 [node name="GroundCast" type="Node2D" parent="." unique_id=1546079193]

@@ -1,9 +1,11 @@
+use crate::enemy_weapon::EnemyWeapon;
 use crate::scene_game::enemy::draggable_group::DraggableGroup;
 use crate::scene_game::enemy::enemy::Enemy;
 use crate::singletons::GameStats;
 use crate::{node_getter, node_getter_named};
 use godot::classes::{CollisionPolygon2D, ColorRect, Path2D, Sprite2D, StaticBody2D, Timer};
 use godot::prelude::*;
+use rand::prelude::IndexedRandom;
 
 #[derive(GodotClass)]
 #[class(init, base=Node2D)]
@@ -55,12 +57,17 @@ impl SceneGame {
 
     /// Spawns a new enemy
     fn spawn_enemy(&mut self) {
+        let weapons = [
+            // load::<EnemyWeapon>("res://resources/weapons/none.tres"),
+            load::<EnemyWeapon>("res://resources/weapons/sword.tres"),
+        ];
         let enemy_scene = load::<PackedScene>("res://scenes/enemy.tscn");
         let mut enemy_node = enemy_scene.instantiate_as::<Enemy>();
         {
             let mut enemy = enemy_node.bind_mut();
             enemy.walk_path = Some(self.get_node_walk_path());
             enemy.health = 500;
+            enemy.set_weapon(weapons.choose(&mut rand::rng()).cloned());
         }
         self.get_node_enemies().add_child(&enemy_node);
         self.get_node_enemies()

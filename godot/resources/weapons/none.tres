@@ -1,0 +1,4 @@
+[gd_resource type="EnemyWeapon" format=3 uid="uid://bsfwhtuel2gre"]
+
+[resource]
+base_damage = 5

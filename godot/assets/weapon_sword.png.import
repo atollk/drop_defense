@@ -2,17 +2,16 @@
 
 importer="texture"
 type="CompressedTexture2D"
-uid="uid://ytrmh7nbxnuj"
-path="res://.godot/imported/icon.svg-3c1cc96164023c11013c39883af0c621.ctex"
+uid="uid://dul5d4jusnnky"
+path="res://.godot/imported/weapon_sword.png-0291c719e48a4038438aeb65b29c8e85.ctex"
 metadata={
-"has_editor_variant": true,
 "vram_texture": false
 }
 
 [deps]
 
-source_file="res://addons/drawn_area_2d/icon.svg"
-dest_files=["res://.godot/imported/icon.svg-3c1cc96164023c11013c39883af0c621.ctex"]
+source_file="res://assets/weapon_sword.png"
+dest_files=["res://.godot/imported/weapon_sword.png-0291c719e48a4038438aeb65b29c8e85.ctex"]
 
 [params]
 
@@ -39,6 +38,3 @@ process/hdr_as_srgb=false
 process/hdr_clamp_exposure=false
 process/size_limit=0
 detect_3d/compress_to=1
-svg/scale=8.0
-editor/scale_with_editor_scale=true
-editor/convert_colors_with_editor_theme=true

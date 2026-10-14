@@ -1,9 +1,11 @@
 use super::fluid_splash::FluidSplash;
+use crate::enemy_weapon::EnemyWeapon;
 use crate::scene_game::enemy::draggable::Draggable;
 use crate::singletons::GameStats;
 use crate::{node_getter, node_getter_named};
 use godot::classes::{
-    AnimatedSprite2D, CollisionShape2D, IRigidBody2D, Path2D, RayCast2D, RigidBody2D,
+    AnimatedSprite2D, AnimationPlayer, CollisionShape2D, IRigidBody2D, Path2D, RayCast2D,
+    RigidBody2D, Sprite2D,
 };
 use godot::prelude::*;
 use itertools::Itertools;
@@ -25,6 +27,11 @@ pub struct Enemy {
     /// Movement speed while walking.
     #[export]
     pub speed: u32,
+
+    /// The weapon used by this enemy.
+    #[export()]
+    #[var(get=get_weapon, set=set_weapon)]
+    weapon: Option<Gd<EnemyWeapon>>,
 
     /// The progress (from 0 to 1) along [path].
     progress: f64,
@@ -65,16 +72,34 @@ impl EnemyState {
 impl Enemy {
     #[signal]
     pub fn died();
+
+    #[func]
+    pub fn get_weapon(&self) -> Option<Gd<EnemyWeapon>> {
+        self.weapon.clone()
+    }
+
+    #[func]
+    pub fn set_weapon(&mut self, value: Option<Gd<EnemyWeapon>>) {
+        self.get_node_weapon_sprite().set_texture(
+            value
+                .as_ref()
+                .and_then(|weapon| weapon.bind().texture.clone())
+                .as_ref(),
+        );
+        self.weapon = value;
+    }
 }
 
 // General logic
 impl Enemy {
     node_getter!(Node2D, "GroundCast");
     node_getter!(CollisionShape2D, "BodyShape");
-    node_getter!(AnimatedSprite2D, "Sprite");
+    node_getter!(AnimatedSprite2D, "BodySprite");
+    node_getter!(AnimationPlayer, "AnimationPlayer");
     node_getter!(FluidSplash, "BloodSplash");
     node_getter!(FluidSplash, "LimbsSplash");
     node_getter_named!(Draggable, "Draggable", pub get_node_draggable);
+    node_getter_named!(Sprite2D, "WeaponHand/Weapon", pub get_node_weapon_sprite);
 
     /// RigidBody2D does not support settings its scale directly, so we have to use this workaround
     /// by setting the scale of every child individually.
@@ -122,9 +147,9 @@ impl Enemy {
     }
 
     /// Connected to a signal whenever the sprite animation finishes.
-    fn on_sprite_animation_finished(&mut self) {
+    fn on_sprite_animation_finished(&mut self, animation_name: StringName) {
         if self.state == EnemyState::Dying {
-            self.get_node_sprite().set_visible(false);
+            self.get_node_body_sprite().set_visible(false);
         }
         if self.state == EnemyState::StandingUp {
             self.set_state(EnemyState::Walking);
@@ -165,9 +190,9 @@ impl Enemy {
         self.base_mut().set_freeze_enabled(freeze_enabled);
 
         // Animation
-        self.get_node_sprite()
+        self.get_node_body_sprite()
             .set_animation(self.state.animation_name());
-        self.get_node_sprite().play();
+        self.get_node_body_sprite().play();
         if self.state == EnemyState::Dying {
             self.signals().died().emit();
             self.get_node_blood_splash().bind_mut().spawn_drops();
@@ -232,6 +257,7 @@ impl IRigidBody2D for Enemy {
             walk_path: None,
             health: 0,
             speed: 10,
+            weapon: None,
             progress: 0.0,
             state: EnemyState::Dying, // has to be overwritten on ready
             fall_height: f32::INFINITY,
@@ -254,10 +280,13 @@ impl IRigidBody2D for Enemy {
                 .set_shape(Some(self.get_node_body_shape().duplicate_node()));
         });
 
-        self.get_node_sprite()
-            .signals()
-            .animation_finished()
-            .connect_other(self, Self::on_sprite_animation_finished);
+        self.get_node_animation_player().tap_mut(|ap| {
+            ap.play_ex().name("EnemyWalk").done();
+            ap.signals()
+                .animation_finished()
+                .connect_other(self, Self::on_sprite_animation_finished);
+        });
+        self.get_node_body_sprite().stop();
 
         self.set_state(EnemyState::Walking);
 
@@ -266,17 +295,21 @@ impl IRigidBody2D for Enemy {
                 "The scale of this Enemy is not 1. That's an issue because the physics will probably break. It should be set via Enemy.set_scale_recursively."
             )
         }
-        self.set_scale_recursively(Vector2::new(0.5, 0.5));
+
+        self.base_mut().set_scale(Vector2::new(0.5, 0.5));
+        // self.set_scale_recursively(Vector2::new(0.5, 0.5));
     }
 
     fn process(&mut self, delta: f64) {
+        self.base_mut().set_scale(Vector2::new(0.5, 0.5));
         self.update_path_progress(delta / 100.0 * self.speed as f64);
         self.check_fall_ground();
 
         if self.state == EnemyState::Attacking {
             let mut game_stats_singleton = GameStats::singleton();
             let mut game_stats = game_stats_singleton.bind_mut();
-            game_stats.health = (game_stats.health - delta as f32).max(0.0);
+            let damage = delta / 100.0 * self.weapon.as_ref().unwrap().bind().base_damage as f64;
+            game_stats.health = (game_stats.health - damage as f32).max(0.0);
         }
     }
 
