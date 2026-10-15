@@ -2,10 +2,11 @@ use super::fluid_splash::FluidSplash;
 use crate::enemy_weapon::EnemyWeapon;
 use crate::node_getter_named;
 use crate::scene_game::enemy::draggable::Draggable;
+use crate::scene_game::portal::Portal;
 use crate::singletons::GameStats;
 use godot::classes::{
-    AnimatedSprite2D, AnimationPlayer, CollisionShape2D, IRigidBody2D, Path2D, RayCast2D,
-    RigidBody2D, Sprite2D,
+    AnimatedSprite2D, AnimationPlayer, Area2D, CollisionShape2D, IRigidBody2D, Path2D, RayCast2D,
+    RigidBody2D, Shader, ShaderMaterial, Sprite2D,
 };
 use godot::prelude::*;
 use itertools::Itertools;
@@ -192,7 +193,7 @@ impl Enemy {
         }
 
         // Gravity
-        let gravity_scale = if self.state == EnemyState::Falling {
+        let gravity_scale = if matches!(self.state, EnemyState::Falling) {
             FALLING_GRAVITY
         } else {
             0.
@@ -221,7 +222,7 @@ impl Enemy {
 
     /// Checks whether a falling enemy has hit the ground.
     fn check_fall_ground(&mut self) {
-        if self.state != EnemyState::Falling {
+        if !matches!(self.state, EnemyState::Falling) {
             return;
         }
         let Some(walk_path) = &self.walk_path else {
@@ -261,6 +262,45 @@ impl Enemy {
             self.set_state(EnemyState::StandingUp);
         } else {
             self.set_state(EnemyState::Walking);
+        }
+    }
+
+    pub fn get_shader_material(&self) -> Gd<ShaderMaterial> {
+        self.base()
+            .find_child("Scaling")
+            .unwrap()
+            .cast::<Node2D>()
+            .get_material()
+            .unwrap()
+            .cast()
+    }
+
+    pub fn entered_portal(&mut self, swallow_area: &Area2D) {
+        let mut material = self.get_shader_material();
+        material.set_shader_parameter(
+            "portal_center_pos",
+            &swallow_area.get_global_position().to_variant(),
+        );
+        material.set_shader_parameter(
+            "portal_radii",
+            &swallow_area
+                .get_child(0)
+                .unwrap()
+                .cast::<Node2D>()
+                .get_global_scale()
+                .to_variant(),
+        );
+        material.set_shader_parameter("falling_into_portal", &true.to_variant());
+    }
+
+    // TODO
+    pub fn exited_portal(&mut self, portal: &Portal) {
+        if matches!(self.state, EnemyState::Falling) {
+            // entered portal
+            todo!()
+        } else {
+            let mut material = self.get_shader_material();
+            material.set_shader_parameter("falling_into_portal", &false.to_variant());
         }
     }
 }
@@ -328,7 +368,7 @@ impl IRigidBody2D for Enemy {
             .drag_towards_cursor(&mut *self.base_mut(), delta);
 
         // Update fall height
-        if self.state == EnemyState::Falling {
+        if matches!(self.state, EnemyState::Falling) {
             self.fall_height = self.fall_height.min(self.base().get_global_position().y);
         } else {
             self.fall_height = f32::INFINITY;

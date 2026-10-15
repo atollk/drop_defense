@@ -14,7 +14,7 @@
 radius = 77.5
 height = 308.00003
 
-[sub_resource type="ShaderMaterial" id="ShaderMaterial_0puub"]
+[sub_resource type="ShaderMaterial" id="ShaderMaterial_ipns3"]
 resource_local_to_scene = true
 shader = ExtResource("1_md484")
 shader_parameter/portal_center_pos = Vector2(0, 0)
@@ -601,9 +601,10 @@ scale = Vector2(0.99999994, 0.99999994)
 shape = SubResource("CapsuleShape2D_vh74b")
 
 [node name="Scaling" type="Node2D" parent="." unique_id=1524342588]
+material = SubResource("ShaderMaterial_ipns3")
 
 [node name="BodySprite" type="AnimatedSprite2D" parent="Scaling" unique_id=1570912286]
-material = SubResource("ShaderMaterial_0puub")
+use_parent_material = true
 position = Vector2(-4.499998, -151)
 sprite_frames = SubResource("SpriteFrames_q3jpm")
 animation = &"walk"
@@ -611,11 +612,13 @@ autoplay = "walk"
 metadata/_edit_lock_ = true
 
 [node name="WeaponHand" type="Marker2D" parent="Scaling" unique_id=1914262121]
+use_parent_material = true
 position = Vector2(47.999996, -175)
 rotation = 4.9923124
 gizmo_extents = 20.0
 
 [node name="Weapon" type="Sprite2D" parent="Scaling/WeaponHand" unique_id=356334329]
+use_parent_material = true
 texture = ExtResource("6_ipns3")
 metadata/_edit_lock_ = true
 
@@ -661,6 +664,8 @@ drop_gravity = 250.0
 puddle_base_scale = 3.0
 puddle_scale_growth = 0.05
 
-[node name="Feet" type="PortalKey" parent="Scaling" unique_id=1791598395]
+[node name="Feet" type="PortalKey" parent="Scaling" unique_id=1791598395 node_paths=PackedStringArray("enemy_parent")]
+enemy_parent = NodePath("../..")
+layers_2d_physics = 4
 
 [node name="Draggable" type="Draggable" parent="Scaling" unique_id=627898890]

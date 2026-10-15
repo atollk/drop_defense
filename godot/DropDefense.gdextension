@@ -13,3 +13,5 @@ macos.release =          "res://../rust/target/release/libdrop_defense.dylib"
 macos.debug.arm64 =      "res://../rust/target/debug/libdrop_defense.dylib"
 macos.release.arm64 =    "res://../rust/target/release/libdrop_defense.dylib"
 
+[icons]
+PortalKey = "res://addons/at-icons/node2d/key.svg"

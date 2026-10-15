@@ -1,5 +1,6 @@
 use crate::node_getter;
 use crate::scene_game::enemy::enemy::Enemy;
+use crate::scene_game::portal_key::PortalKey;
 use godot::classes::node::InternalMode;
 use godot::classes::notify::CanvasItemNotification;
 use godot::classes::tween::{EaseType, TransitionType};
@@ -88,6 +89,7 @@ impl Portal {
     }
 
     fn find_swallow_area(&self) -> Result<Gd<Area2D>, String> {
+        // The node from `spawn_portal_area_node` is an internal node and thus implicitly excluded here.
         self.base()
             .get_children()
             .iter_shared()
@@ -96,53 +98,42 @@ impl Portal {
             .map_err(|e| e.to_string())
     }
 
-    fn on_child_entered(&mut self, _child: Gd<Node>) {
-        if let Some(area_child) = self.find_swallow_area().ok() {
-            area_child
-                .signals()
-                .area_entered()
-                .connect_other(self, |s, _| {
-                    s.open();
-                });
-            area_child
-                .signals()
-                .area_entered()
-                .connect_self(|area_child, enemy| {
-                    // TODO: It would be nicer if this was done with an interface instead of the specific struct; and if we didn't have to go through the parent.
-                    if let Ok(enemy) = enemy.get_parent().unwrap().try_cast::<Enemy>() {
-                        let sprite = enemy.find_child("Sprite").unwrap().cast::<CanvasItem>();
-                        let mut material = sprite.get_material().unwrap().cast::<ShaderMaterial>();
-                        material.set_shader_parameter(
-                            "portal_center_pos",
-                            &area_child.get_global_position().to_variant(),
-                        );
-                        material.set_shader_parameter(
-                            "portal_radii",
-                            &area_child
-                                .get_child(0)
-                                .unwrap()
-                                .cast::<Node2D>()
-                                .get_global_scale()
-                                .to_variant(),
-                        );
-                        material.set_shader_parameter("falling_into_portal", &true.to_variant());
-                    }
-                });
-            area_child
-                .signals()
-                .area_exited()
-                .connect_other(self, |s, _| {
-                    s.close();
-                });
-        }
-        self.base_mut().update_configuration_warnings();
-    }
-
     fn connect_signals(&mut self) {
-        self.base()
+        let Some(swallow_area) = self.find_swallow_area().ok() else {
+            return;
+        };
+        // Connections for the open/close animation.
+        swallow_area
             .signals()
-            .child_entered_tree()
-            .connect_other(self, Self::on_child_entered);
+            .area_entered()
+            .connect_other(self, |s, _| {
+                s.open();
+            });
+        swallow_area
+            .signals()
+            .area_exited()
+            .connect_other(self, |s, _| {
+                s.close();
+            });
+        // Connections to the enemy.
+        swallow_area
+            .signals()
+            .area_entered()
+            .connect_self(|swallow_area, portal_key_area| {
+                // TODO: it would be nicer if this was using an interface rather than hardcoded for Enemies
+                let portal_key = portal_key_area.get_parent().unwrap().cast::<PortalKey>();
+                let mut enemy = portal_key.bind().enemy_parent.clone().unwrap();
+                enemy.bind_mut().entered_portal(swallow_area);
+            });
+        swallow_area
+            .signals()
+            .area_exited()
+            .connect_other(self, |s, portal_key_area| {
+                // TODO: it would be nicer if this was using an interface rather than hardcoded for Enemies
+                let portal_key = portal_key_area.get_parent().unwrap().cast::<PortalKey>();
+                let mut enemy = portal_key.bind().enemy_parent.clone().unwrap();
+                enemy.bind_mut().exited_portal(s);
+            });
     }
 
     /// Spawns a new Area2D node that covers the visible area of the portal.
@@ -164,7 +155,7 @@ impl Portal {
             area_node.set_name("_PortalArea");
             area_node.add_child(&shape_node);
             area_node.set_collision_layer(0);
-            area_node.set_visibility_layer(0);
+            area_node.set_collision_mask(0);
             area_node
         };
         self.base_mut()
@@ -221,6 +212,7 @@ impl INode2D for Portal {
     fn ready(&mut self) {
         self.close();
         self.connect_signals();
+        self.base_mut().update_configuration_warnings();
         self.spawn_portal_area_node();
     }
 
@@ -228,6 +220,7 @@ impl INode2D for Portal {
         // https://godot-rust.github.io/book/register/signals.html#signals-in-the-editor--hot-reload-interaction
         if what == CanvasItemNotification::EXTENSION_RELOADED {
             self.connect_signals();
+            self.base_mut().update_configuration_warnings();
         }
     }
 
