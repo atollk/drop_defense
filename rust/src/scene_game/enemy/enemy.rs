@@ -3,9 +3,10 @@ use crate::enemy_weapon::EnemyWeapon;
 use crate::node_getter_named;
 use crate::portal::portal::Portal;
 use crate::scene_game::enemy::draggable::Draggable;
+use crate::scene_game::enemy::enemy_state::EnemyState;
 use crate::singletons::GameStats;
 use godot::classes::{
-    AnimatedSprite2D, AnimationPlayer, Area2D, CollisionShape2D, IRigidBody2D, Path2D, RayCast2D,
+    AnimatedSprite2D, AnimationPlayer, CollisionShape2D, IRigidBody2D, Path2D, RayCast2D,
     RigidBody2D, ShaderMaterial, Sprite2D,
 };
 use godot::prelude::*;
@@ -47,29 +48,6 @@ pub struct Enemy {
     inside_portal: Option<Gd<Portal>>,
 
     base: Base<RigidBody2D>,
-}
-
-#[derive(Debug, PartialEq, Eq, Clone, Copy, Hash)]
-pub enum EnemyState {
-    Walking,
-    Dragged,
-    Falling,
-    Attacking,
-    StandingUp,
-    Dying,
-}
-
-impl EnemyState {
-    const fn animation_name(&self) -> &'static str {
-        match self {
-            EnemyState::Walking => "Walk",
-            EnemyState::Dragged => "Stand",
-            EnemyState::Falling => "Stand",
-            EnemyState::Attacking => "Attack",
-            EnemyState::StandingUp => "StandUp",
-            EnemyState::Dying => "Death",
-        }
-    }
 }
 
 #[godot_api]
@@ -136,17 +114,13 @@ impl Enemy {
 
     /// Move the enemy along the specified PathFollow2D by the given amount.
     fn update_path_progress(&mut self, delta: f64) {
-        if self.state != EnemyState::Walking
-            && self.state != EnemyState::Attacking
-            && self.state != EnemyState::StandingUp
-            && self.state != EnemyState::Dying
-        {
+        if !self.state.is_moving_along_path() {
             return;
         }
         let Some(walk_path) = self.walk_path.as_mut() else {
             return;
         };
-        if self.state == EnemyState::Walking {
+        if matches!(self.state, EnemyState::Walking) {
             self.progress = (self.progress + delta).min(1.0);
         }
         let curve = walk_path
@@ -186,20 +160,11 @@ impl Enemy {
         self.state = new_state;
 
         // Draggable
-        {
-            let mut draggable = self.get_node_draggable();
-            let mut draggable = draggable.bind_mut();
-            draggable.can_be_dragged = matches!(
-                self.state,
-                EnemyState::Walking
-                    | EnemyState::Attacking
-                    | EnemyState::StandingUp
-                    | EnemyState::Falling
-            );
-        }
+        self.get_node_draggable().bind_mut().can_be_dragged = self.state.is_draggable();
 
         // Gravity
-        let gravity_scale = if matches!(self.state, EnemyState::Falling) {
+        // TODO: maybe lower this if swallowed to give the portal a "viscosity"
+        let gravity_scale = if self.state.is_falling() {
             FALLING_GRAVITY
         } else {
             0.
@@ -227,7 +192,7 @@ impl Enemy {
     }
 
     fn is_falling_down(&self) -> bool {
-        matches!(self.state, EnemyState::Falling) && self.base().get_linear_velocity().y > -1.0
+        self.state.is_falling() && self.base().get_linear_velocity().y > -1.0
     }
 
     /// Checks whether a falling enemy has hit the ground.
@@ -261,7 +226,9 @@ impl Enemy {
         self.progress = (offset / curve.get_baked_length()) as f64;
 
         let fall_damage = (self.base().get_global_position().y - self.fall_height) as f64;
-        if fall_damage > self.health as f64 {
+        if matches!(self.state, EnemyState::Swallowed) {
+            self.base_mut().queue_free();
+        } else if fall_damage > self.health as f64 {
             self.set_state(EnemyState::Dying);
         } else if fall_damage * 5. > self.health as f64 {
             self.set_state(EnemyState::StandingUp);
@@ -312,7 +279,7 @@ impl Enemy {
             self.signals()
                 .swallowed_by_portal()
                 .emit(portal.portal_index);
-            self.base_mut().queue_free();
+            self.set_state(EnemyState::Swallowed);
         } else {
             let mut material = self.get_shader_material();
             material.set_shader_parameter("falling_into_portal", &false.to_variant());

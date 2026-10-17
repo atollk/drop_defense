@@ -1,7 +1,5 @@
 use crate::node_getter;
 use crate::portal::portal_swallow_area::PortalSwallowArea;
-use crate::scene_game::portal_key::PortalKey;
-use godot::classes::node::InternalMode;
 use godot::classes::notify::CanvasItemNotification;
 use godot::classes::tween::{EaseType, TransitionType};
 use godot::classes::{Area2D, CircleShape2D, CollisionShape2D, ShaderMaterial, Sprite2D, Tween};
