@@ -9,18 +9,18 @@ uniform float rim_width : hint_range(0.0, 0.2);
 uniform float softness : hint_range(0.0, 0.1);
 
 group_uniforms Breathing;
-uniform float breathing_speed: hint_range(0.0, 5.0, 0.1);
-uniform float breathing_strength: hint_range(0.0, 0.2);
+uniform float breathing_speed : hint_range(0.0, 5.0, 0.1);
+uniform float breathing_strength : hint_range(0.0, 0.2);
 
 group_uniforms Noise;
 uniform float noise_angle : hint_range(0, 360);
-uniform float noise_speed: hint_range(0, 1);
+uniform float noise_speed : hint_range(0, 1);
 uniform float noise_strength : hint_range(0.0, 0.1);
 
 
 vec2 rotate(vec2 v, float angle)
 {
-    mat2 rotation = mat2(vec2(sin(angle), -cos(angle)),        vec2(cos(angle), sin(angle)));
+    mat2 rotation = mat2(vec2(sin(angle), -cos(angle)), vec2(cos(angle), sin(angle)));
     return v * rotation;
 }
 

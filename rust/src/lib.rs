@@ -1,4 +1,5 @@
 pub mod enemy_weapon;
+mod portal;
 pub mod root_main;
 pub mod scene_game;
 pub mod scene_main_menu;

@@ -14,9 +14,8 @@ void fragment() {
     if (falling_into_portal) {
         vec2 pos_local_to_hole = world_pos - portal_center_pos;
         vec2 pos_relative_to_radius = vec2(pos_local_to_hole.x / portal_radii.x, pos_local_to_hole.y / portal_radii.y);
-        if (pos_relative_to_radius.y > 1.0) {
-            discard;
-        }
+        float alpha = mix(1.0, 0.0, pos_relative_to_radius.y + 0.5);
+        COLOR.a *= alpha;
     }
 }
 

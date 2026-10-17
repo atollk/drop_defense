@@ -1,22 +1,23 @@
 use crate::node_getter;
-use crate::scene_game::enemy::enemy::Enemy;
+use crate::portal::portal_swallow_area::PortalSwallowArea;
 use crate::scene_game::portal_key::PortalKey;
 use godot::classes::node::InternalMode;
 use godot::classes::notify::CanvasItemNotification;
 use godot::classes::tween::{EaseType, TransitionType};
-use godot::classes::{
-    Area2D, CanvasItem, CircleShape2D, CollisionShape2D, ShaderMaterial, Sprite2D, Tween,
-};
+use godot::classes::{Area2D, CircleShape2D, CollisionShape2D, ShaderMaterial, Sprite2D, Tween};
 use godot::prelude::*;
 use itertools::Itertools;
 use std::collections::HashMap;
 use std::time::Duration;
 
 #[derive(GodotClass)]
-#[class(tool, base=Node2D)]
+#[class(tool, init, base=Node2D)]
 pub struct Portal {
     #[export]
     pub transform_duration_ms: u32,
+
+    #[export]
+    pub portal_index: u8,
 
     #[export_tool_button(fn = Self::open, name = "Open")]
     open_fn: PhantomVar<Callable>,
@@ -25,6 +26,7 @@ pub struct Portal {
 
     shader_transforms: ShaderTransforms,
     transform_tween: Option<Gd<Tween>>,
+    pub area_node: Option<Gd<Area2D>>,
 
     base: Base<Node2D>,
 }
@@ -63,10 +65,13 @@ impl Portal {
         };
 
         let tween = {
+            // Tween setup
             let mut tween = self.base_mut().create_tween();
             tween.set_parallel_ex().parallel(true).done();
             tween.set_ease(EaseType::IN_OUT);
             tween.set_trans(TransitionType::CUBIC);
+
+            // Transition the shaders parameters
             for (param_name, param_value) in shader_param_values.iter() {
                 tween.tween_property(
                     &sprite_material,
@@ -75,65 +80,58 @@ impl Portal {
                     duration.as_secs_f64(),
                 );
             }
+
+            // Transition the area scale to match the visual size
+            if let Some(param_value) = shader_param_values.get("radius") {
+                let sprite_size = self.get_sprite_size();
+                tween.tween_property(
+                    self.area_node.as_ref().unwrap(),
+                    "scale",
+                    &Vector2::new(
+                        param_value.to::<real>() * sprite_size.x,
+                        param_value.to::<real>() * sprite_size.y,
+                    )
+                    .to_variant(),
+                    duration.as_secs_f64(),
+                );
+            }
+
             tween
         };
         self.transform_tween = Some(tween);
     }
 
-    fn open(&mut self) {
+    pub fn get_sprite_size(&self) -> Vector2 {
+        let texture_size = self.get_node_sprite2_d().get_texture().unwrap().get_size();
+        let local_scale = self.get_node_sprite2_d().get_scale();
+        Vector2::new(
+            texture_size.x * local_scale.x,
+            texture_size.y * local_scale.y,
+        )
+    }
+
+    pub(crate) fn open(&mut self) {
         self.transform(1, Duration::from_millis(500));
     }
 
-    fn close(&mut self) {
+    pub(crate) fn close(&mut self) {
         self.transform(0, Duration::from_millis(500));
     }
 
-    fn find_swallow_area(&self) -> Result<Gd<Area2D>, String> {
-        // The node from `spawn_portal_area_node` is an internal node and thus implicitly excluded here.
+    fn find_swallow_area(&self) -> Result<Gd<PortalSwallowArea>, String> {
         self.base()
             .get_children()
             .iter_shared()
-            .filter_map(|child| child.try_cast::<Area2D>().ok())
+            .filter_map(|child| child.try_cast::<PortalSwallowArea>().ok())
             .exactly_one()
             .map_err(|e| e.to_string())
     }
 
     fn connect_signals(&mut self) {
-        let Some(swallow_area) = self.find_swallow_area().ok() else {
+        let Some(mut swallow_area) = self.find_swallow_area().ok() else {
             return;
         };
-        // Connections for the open/close animation.
-        swallow_area
-            .signals()
-            .area_entered()
-            .connect_other(self, |s, _| {
-                s.open();
-            });
-        swallow_area
-            .signals()
-            .area_exited()
-            .connect_other(self, |s, _| {
-                s.close();
-            });
-        // Connections to the enemy.
-        swallow_area
-            .signals()
-            .area_entered()
-            .connect_self(|swallow_area, portal_key_area| {
-                // TODO: it would be nicer if this was using an interface rather than hardcoded for Enemies
-                let portal_key = portal_key_area.get_parent().unwrap().cast::<PortalKey>();
-                let mut enemy = portal_key.bind().enemy_parent.clone().unwrap();
-                enemy.bind_mut().entered_portal(swallow_area);
-            });
-        swallow_area
-            .signals()
-            .area_exited()
-            .connect_other(self, |s, portal_key_area| {
-                // TODO: it would be nicer if this was using an interface rather than hardcoded for Enemies
-                let portal_key = portal_key_area.get_parent().unwrap().cast::<PortalKey>();
-                let mut enemy = portal_key.bind().enemy_parent.clone().unwrap();
-                enemy.bind_mut().exited_portal(s);
-            });
+        swallow_area.bind_mut().connect_signals(self);
     }
 
     /// Spawns a new Area2D node that covers the visible area of the portal.
@@ -147,21 +145,18 @@ impl Portal {
             let mut shape_node = CollisionShape2D::new_alloc();
             shape_node.set_name("CollisionShape2D");
             shape_node.set_shape(&shape);
-            shape_node.set_scale(Vector2::ONE); // TODO
             shape_node
         };
         let area_node = {
             let mut area_node = Area2D::new_alloc();
-            area_node.set_name("_PortalArea");
+            area_node.set_name("PortalArea");
             area_node.add_child(&shape_node);
             area_node.set_collision_layer(0);
             area_node.set_collision_mask(0);
             area_node
         };
-        self.base_mut()
-            .add_child_ex(&area_node)
-            .internal(InternalMode::FRONT)
-            .done();
+        self.base_mut().add_child(&area_node);
+        self.area_node = Some(area_node);
     }
 }
 
@@ -185,35 +180,30 @@ struct ShaderTransforms {
     noise_strength: ShaderTransformValue<f32>,
 }
 
-#[godot_api]
-impl INode2D for Portal {
-    fn init(base: Base<Self::Base>) -> Self {
-        Portal {
-            transform_duration_ms: 0,
-            open_fn: Default::default(),
-            close_fn: Default::default(),
-            shader_transforms: ShaderTransforms {
-                inner_color: None,
-                rim_color: None,
-                radius: Some([0.1, 0.365]),
-                rim_width: Some([0.02, 0.065]),
-                softness: None,
-                breathing_speed: None,
-                breathing_strength: Some([0., 0.018]),
-                noise_angle: None,
-                noise_speed: None,
-                noise_strength: None,
-            },
-            transform_tween: None,
-            base,
+impl Default for ShaderTransforms {
+    fn default() -> Self {
+        ShaderTransforms {
+            inner_color: None,
+            rim_color: None,
+            radius: Some([0.1, 0.365]),
+            rim_width: Some([0.02, 0.065]),
+            softness: None,
+            breathing_speed: None,
+            breathing_strength: Some([0., 0.018]),
+            noise_angle: None,
+            noise_speed: None,
+            noise_strength: None,
         }
     }
+}
 
+#[godot_api]
+impl INode2D for Portal {
     fn ready(&mut self) {
+        self.spawn_portal_area_node();
         self.close();
         self.connect_signals();
         self.base_mut().update_configuration_warnings();
-        self.spawn_portal_area_node();
     }
 
     fn on_notification(&mut self, what: CanvasItemNotification) {
@@ -229,7 +219,7 @@ impl INode2D for Portal {
         let area_child = self.find_swallow_area();
         if let Err(e) = area_child {
             warnings.push(&format!(
-                "Portal needs to have exactly one Area2D child for opening/closing proximity. {e}"
+                "Portal needs to have exactly one PortalSwallowArea child for opening/closing proximity. {e}"
             ));
         }
         warnings

@@ -58,16 +58,39 @@ impl SceneGame {
     /// Spawns a new enemy
     fn spawn_enemy(&mut self) {
         let weapons = [
-            // load::<EnemyWeapon>("res://resources/weapons/none.tres"),
+            load::<EnemyWeapon>("res://resources/weapons/none.tres"),
             load::<EnemyWeapon>("res://resources/weapons/sword.tres"),
         ];
         let enemy_scene = load::<PackedScene>("res://scenes/enemy.tscn");
         let mut enemy_node = enemy_scene.instantiate_as::<Enemy>();
+        let on_enemy_death = {
+            let enemy_node = enemy_node.clone();
+            move |s: &mut Self| {
+                s.get_node_enemies()
+                    .bind_mut()
+                    .remove_draggable(enemy_node.bind().get_node_draggable());
+            }
+        };
+        let on_enemy_swallowed_by_portal = {
+            let enemy_node = enemy_node.clone();
+            move |s: &mut Self, portal_index: u8| {
+                s.get_node_enemies()
+                    .bind_mut()
+                    .remove_draggable(enemy_node.bind().get_node_draggable());
+                // TODO
+                godot_print!("Portal {}", portal_index);
+            }
+        };
         {
             let mut enemy = enemy_node.bind_mut();
             enemy.walk_path = Some(self.get_node_walk_path());
             enemy.health = 500;
             enemy.set_weapon(weapons.choose(&mut rand::rng()).cloned());
+            enemy.signals().died().connect_other(self, on_enemy_death);
+            enemy
+                .signals()
+                .swallowed_by_portal()
+                .connect_other(self, on_enemy_swallowed_by_portal);
         }
         self.get_node_enemies().add_child(&enemy_node);
         self.get_node_enemies()

@@ -1,12 +1,12 @@
 use super::fluid_splash::FluidSplash;
 use crate::enemy_weapon::EnemyWeapon;
 use crate::node_getter_named;
+use crate::portal::portal::Portal;
 use crate::scene_game::enemy::draggable::Draggable;
-use crate::scene_game::portal::Portal;
 use crate::singletons::GameStats;
 use godot::classes::{
     AnimatedSprite2D, AnimationPlayer, Area2D, CollisionShape2D, IRigidBody2D, Path2D, RayCast2D,
-    RigidBody2D, Shader, ShaderMaterial, Sprite2D,
+    RigidBody2D, ShaderMaterial, Sprite2D,
 };
 use godot::prelude::*;
 use itertools::Itertools;
@@ -43,6 +43,9 @@ pub struct Enemy {
     /// The Y coordinate at which falling started.
     fall_height: f32,
 
+    /// The portal this enemy is currently in, if any.
+    inside_portal: Option<Gd<Portal>>,
+
     base: Base<RigidBody2D>,
 }
 
@@ -73,6 +76,9 @@ impl EnemyState {
 impl Enemy {
     #[signal]
     pub fn died();
+
+    #[signal]
+    pub fn swallowed_by_portal(portal_index: u8);
 
     #[func]
     pub fn get_weapon(&self) -> Option<Gd<EnemyWeapon>> {
@@ -220,19 +226,18 @@ impl Enemy {
         }
     }
 
+    fn is_falling_down(&self) -> bool {
+        matches!(self.state, EnemyState::Falling) && self.base().get_linear_velocity().y > -1.0
+    }
+
     /// Checks whether a falling enemy has hit the ground.
     fn check_fall_ground(&mut self) {
-        if !matches!(self.state, EnemyState::Falling) {
+        if !self.is_falling_down() {
             return;
         }
         let Some(walk_path) = &self.walk_path else {
             return;
         };
-        // Falling can only end if the enemy is moving down (y positive).
-        // Just checking > 0 doesn't work because of floating points arithmetic.
-        if self.base().get_linear_velocity().y < -1.0 {
-            return;
-        }
 
         // Check if any of the "foot" rays detects ground.
         let rays: [_; 3] = self
@@ -275,32 +280,43 @@ impl Enemy {
             .cast()
     }
 
-    pub fn entered_portal(&mut self, swallow_area: &Area2D) {
+    fn sync_shader_to_portal(&mut self) {
+        let Some(portal) = self.inside_portal.clone() else {
+            return;
+        };
         let mut material = self.get_shader_material();
         material.set_shader_parameter(
             "portal_center_pos",
-            &swallow_area.get_global_position().to_variant(),
+            &portal.get_global_position().to_variant(),
         );
         material.set_shader_parameter(
             "portal_radii",
-            &swallow_area
-                .get_child(0)
+            &portal
+                .bind()
+                .area_node
+                .as_ref()
                 .unwrap()
-                .cast::<Node2D>()
                 .get_global_scale()
                 .to_variant(),
         );
+    }
+
+    pub fn entered_portal(&mut self, portal: &Portal) {
+        self.inside_portal = Some(portal.to_gd());
+        let mut material = self.get_shader_material();
         material.set_shader_parameter("falling_into_portal", &true.to_variant());
     }
 
-    // TODO
     pub fn exited_portal(&mut self, portal: &Portal) {
-        if matches!(self.state, EnemyState::Falling) {
-            // entered portal
-            todo!()
+        if self.is_falling_down() {
+            self.signals()
+                .swallowed_by_portal()
+                .emit(portal.portal_index);
+            self.base_mut().queue_free();
         } else {
             let mut material = self.get_shader_material();
             material.set_shader_parameter("falling_into_portal", &false.to_variant());
+            self.inside_portal = None;
         }
     }
 }
@@ -316,6 +332,7 @@ impl IRigidBody2D for Enemy {
             progress: 0.0,
             state: EnemyState::Dying, // has to be overwritten on ready
             fall_height: f32::INFINITY,
+            inside_portal: None,
             base,
         }
     }
@@ -353,6 +370,7 @@ impl IRigidBody2D for Enemy {
     fn process(&mut self, delta: f64) {
         self.update_path_progress(delta / 100.0 * self.speed as f64);
         self.check_fall_ground();
+        self.sync_shader_to_portal();
 
         if self.state == EnemyState::Attacking {
             let mut game_stats_singleton = GameStats::singleton();
