@@ -45,4 +45,8 @@ impl EnemyState {
                 | EnemyState::Falling
         )
     }
+
+    pub const fn is_physics_frozen(&self) -> bool {
+        matches!(self, EnemyState::Walking)
+    }
 }

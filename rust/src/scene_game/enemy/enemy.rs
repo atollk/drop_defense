@@ -3,6 +3,7 @@ use crate::enemy_weapon::EnemyWeapon;
 use crate::node_getter_named;
 use crate::portal::portal::Portal;
 use crate::scene_game::enemy::draggable::Draggable;
+use crate::scene_game::enemy::enemy_sprite::EnemySprite;
 use crate::scene_game::enemy::enemy_state::EnemyState;
 use crate::singletons::GameStats;
 use godot::classes::{
@@ -66,10 +67,7 @@ impl Enemy {
     #[func]
     pub fn set_weapon(&mut self, value: Option<Gd<EnemyWeapon>>) {
         let Some(weapon) = value else { return };
-        self.get_node_weapon_sprite()
-            .set_texture(weapon.bind().texture.as_ref());
-        self.get_node_weapon_sprite()
-            .set_offset(weapon.bind().texture_offset);
+        self.get_node_enemy_sprite().bind_mut().set_weapon(&weapon);
         self.weapon = Some(weapon);
     }
 }
@@ -78,20 +76,8 @@ impl Enemy {
 impl Enemy {
     node_getter_named!(Node2D, "Scaling/GroundCast", get_node_ground_cast);
     node_getter_named!(CollisionShape2D, "BodyShape", get_node_body_shape);
-    node_getter_named!(AnimatedSprite2D, "Scaling/BodySprite", get_node_body_sprite);
-    node_getter_named!(
-        AnimationPlayer,
-        "Scaling/AnimationPlayer",
-        get_node_animation_player
-    );
-    node_getter_named!(FluidSplash, "Scaling/BloodSplash", get_node_blood_splash);
-    node_getter_named!(FluidSplash, "Scaling/LimbsSplash", get_node_limbs_splash);
     node_getter_named!(Draggable, "Scaling/Draggable", pub get_node_draggable);
-    node_getter_named!(
-        Sprite2D,
-        "Scaling/WeaponHand/Weapon",
-        get_node_weapon_sprite
-    );
+    node_getter_named!(EnemySprite, "Scaling/EnemySprite", get_node_enemy_sprite);
 
     /// RigidBody2D does not support settings its scale directly, so we have to use this workaround
     /// by setting the scale of every child individually.
@@ -142,13 +128,9 @@ impl Enemy {
 
     /// Connected to a signal whenever the sprite animation finishes.
     fn on_sprite_animation_finished(&mut self, _animation_name: StringName) {
-        if self.state == EnemyState::Dying {
-            self.get_node_body_sprite().set_visible(false);
-        }
         if self.state == EnemyState::StandingUp {
             self.set_state(EnemyState::Walking);
         }
-        self.get_node_animation_player().play();
     }
 
     pub fn get_state(&self) -> EnemyState {
@@ -172,22 +154,17 @@ impl Enemy {
         self.base_mut().set_gravity_scale(gravity_scale);
 
         // Physics
-        let freeze_enabled = self.state == EnemyState::Walking;
-        self.base_mut().set_freeze_enabled(freeze_enabled);
+        self.state
+            .is_physics_frozen()
+            .tap(|&frozen| self.base_mut().set_freeze_enabled(frozen));
 
         // Animation
-        self.get_node_animation_player()
-            .play_ex()
-            .name(self.state.animation_name())
-            .done();
+        self.get_node_enemy_sprite()
+            .bind_mut()
+            .play_state_animation(self.state);
+
         if self.state == EnemyState::Dying {
             self.signals().died().emit();
-            self.get_node_blood_splash().bind_mut().spawn_drops();
-            self.get_node_limbs_splash().bind_mut().spawn_drops();
-            self.get_node_blood_splash()
-                .signals()
-                .animation_ended()
-                .connect_other(self, |s| s.base_mut().queue_free());
         }
     }
 
@@ -237,41 +214,11 @@ impl Enemy {
         }
     }
 
-    pub fn get_shader_material(&self) -> Gd<ShaderMaterial> {
-        self.base()
-            .find_child("Scaling")
-            .unwrap()
-            .cast::<Node2D>()
-            .get_material()
-            .unwrap()
-            .cast()
-    }
-
-    fn sync_shader_to_portal(&mut self) {
-        let Some(portal) = self.inside_portal.clone() else {
-            return;
-        };
-        let mut material = self.get_shader_material();
-        material.set_shader_parameter(
-            "portal_center_pos",
-            &portal.get_global_position().to_variant(),
-        );
-        material.set_shader_parameter(
-            "portal_radii",
-            &portal
-                .bind()
-                .area_node
-                .as_ref()
-                .unwrap()
-                .get_global_scale()
-                .to_variant(),
-        );
-    }
-
     pub fn entered_portal(&mut self, portal: &Portal) {
         self.inside_portal = Some(portal.to_gd());
-        let mut material = self.get_shader_material();
-        material.set_shader_parameter("falling_into_portal", &true.to_variant());
+        self.get_node_enemy_sprite()
+            .bind_mut()
+            .set_inside_portal(true);
     }
 
     pub fn exited_portal(&mut self, portal: &Portal) {
@@ -281,9 +228,10 @@ impl Enemy {
                 .emit(portal.portal_index);
             self.set_state(EnemyState::Swallowed);
         } else {
-            let mut material = self.get_shader_material();
-            material.set_shader_parameter("falling_into_portal", &false.to_variant());
             self.inside_portal = None;
+            self.get_node_enemy_sprite()
+                .bind_mut()
+                .set_inside_portal(false);
         }
     }
 }
@@ -319,11 +267,10 @@ impl IRigidBody2D for Enemy {
                 .set_shape(Some(self.get_node_body_shape().duplicate_node()));
         });
 
-        self.get_node_animation_player()
+        self.get_node_enemy_sprite()
             .signals()
-            .animation_finished()
+            .animation_ended()
             .connect_other(self, Self::on_sprite_animation_finished);
-        self.get_node_body_sprite().stop();
         self.set_state(EnemyState::Walking);
 
         if self.base().get_scale() != Vector2::ONE {
@@ -337,7 +284,11 @@ impl IRigidBody2D for Enemy {
     fn process(&mut self, delta: f64) {
         self.update_path_progress(delta / 100.0 * self.speed as f64);
         self.check_fall_ground();
-        self.sync_shader_to_portal();
+        if let Some(portal) = self.inside_portal.clone() {
+            self.get_node_enemy_sprite()
+                .bind_mut()
+                .sync_shader_to_portal(&portal);
+        };
 
         if self.state == EnemyState::Attacking {
             let mut game_stats_singleton = GameStats::singleton();
