@@ -253,6 +253,10 @@ impl IRigidBody2D for Enemy {
     }
 
     fn process(&mut self, delta: f64) {
+        // TODO(debug): remove once the web portal placement issue is solved.
+        println!("Enemy.process");
+        godot_print!("Enemy.process");
+
         self.update_path_progress(delta / 100.0 * self.speed as f64);
         if self.fell_on_the_ground() {
             self.on_ground_fall();
