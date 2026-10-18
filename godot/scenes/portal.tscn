@@ -1,6 +1,6 @@
 [gd_scene format=3 uid="uid://wqdsoe3mn6"]
 
-[ext_resource type="Shader" uid="uid://bivx402x7irde" path="res://scenes/portal.gdshader" id="1_v0xau"]
+[ext_resource type="Shader" uid="uid://bivx402x7irde" path="res://shaders/portal.gdshader" id="1_v0xau"]
 
 [sub_resource type="ShaderMaterial" id="ShaderMaterial_66ch4"]
 resource_local_to_scene = true
