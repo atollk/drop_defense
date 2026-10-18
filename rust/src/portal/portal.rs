@@ -198,20 +198,15 @@ impl Default for ShaderTransforms {
 #[godot_api]
 impl INode2D for Portal {
     fn ready(&mut self) {
-        self.spawn_portal_area_node();
-        self.close();
-        self.connect_signals();
-        self.base_mut().update_configuration_warnings();
         // TODO(debug): remove once the web portal placement issue is solved.
-        println!(
-            "[portal-debug] {} pos={:?} global_pos={:?} scale={:?} sprite_size={:?} area_scale={:?}",
-            self.base().get_path(),
-            self.base().get_position(),
-            self.base().get_global_position(),
-            self.base().get_scale(),
-            self.get_sprite_size(),
-            self.area_node.as_ref().map(|a| a.get_scale()),
-        );
+        godot_print!("[portal-debug] ready: enter");
+        self.spawn_portal_area_node();
+        godot_print!("[portal-debug] ready: area spawned");
+        self.close();
+        godot_print!("[portal-debug] ready: closed");
+        self.connect_signals();
+        godot_print!("[portal-debug] ready: signals connected");
+        self.base_mut().update_configuration_warnings();
         godot_print!(
             "[portal-debug] {} pos={:?} global_pos={:?} scale={:?} sprite_size={:?} area_scale={:?}",
             self.base().get_path(),
