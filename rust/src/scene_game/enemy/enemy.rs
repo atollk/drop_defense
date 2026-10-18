@@ -1,4 +1,3 @@
-use super::fluid_splash::FluidSplash;
 use crate::enemy_weapon::EnemyWeapon;
 use crate::node_getter_named;
 use crate::portal::portal::Portal;
@@ -6,10 +5,7 @@ use crate::scene_game::enemy::draggable::Draggable;
 use crate::scene_game::enemy::enemy_sprite::EnemySprite;
 use crate::scene_game::enemy::enemy_state::EnemyState;
 use crate::singletons::GameStats;
-use godot::classes::{
-    AnimatedSprite2D, AnimationPlayer, CollisionShape2D, IRigidBody2D, Path2D, RayCast2D,
-    RigidBody2D, ShaderMaterial, Sprite2D,
-};
+use godot::classes::{CollisionShape2D, IRigidBody2D, Path2D, RayCast2D, RigidBody2D};
 use godot::prelude::*;
 use itertools::Itertools;
 use tap::Tap;
@@ -173,14 +169,10 @@ impl Enemy {
     }
 
     /// Checks whether a falling enemy has hit the ground.
-    fn check_fall_ground(&mut self) {
+    fn fell_on_the_ground(&self) -> bool {
         if !self.is_falling_down() {
-            return;
+            return false;
         }
-        let Some(walk_path) = &self.walk_path else {
-            return;
-        };
-
         // Check if any of the "foot" rays detects ground.
         let rays: [_; 3] = self
             .get_node_ground_cast()
@@ -189,12 +181,11 @@ impl Enemy {
             .map(|node| node.cast::<RayCast2D>())
             .collect_array()
             .unwrap();
-        let hit_ground = rays.iter().any(|ray| ray.is_colliding());
-        if !hit_ground {
-            return;
-        }
+        rays.iter().any(|ray| ray.is_colliding())
+    }
 
-        // The enemy has fallen to the ground.
+    fn on_ground_fall(&mut self) {
+        let walk_path = self.walk_path.as_ref().unwrap();
         let curve = walk_path
             .get_curve()
             .expect("the path must have a curve defined");
@@ -283,7 +274,9 @@ impl IRigidBody2D for Enemy {
 
     fn process(&mut self, delta: f64) {
         self.update_path_progress(delta / 100.0 * self.speed as f64);
-        self.check_fall_ground();
+        if self.fell_on_the_ground() {
+            self.on_ground_fall();
+        }
         if let Some(portal) = self.inside_portal.clone() {
             self.get_node_enemy_sprite()
                 .bind_mut()

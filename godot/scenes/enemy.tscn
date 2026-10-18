@@ -1,21 +1,10 @@
 [gd_scene format=3 uid="uid://bmqpde5ecmmsg"]
 
-[ext_resource type="Shader" uid="uid://dd1jlqlin2r0m" path="res://scenes/enemy.gdshader" id="1_md484"]
 [ext_resource type="PackedScene" uid="uid://dodvq4oy2k2g" path="res://scenes/enemy_sprite.tscn" id="2_c4w8v"]
-[ext_resource type="Texture2D" uid="uid://bn5ieqtql85hf" path="res://assets/water-drop.svg" id="5_c4w8v"]
-[ext_resource type="Texture2D" uid="uid://bb0kxx25r2j88" path="res://assets/water-puddle.svg" id="6_xwavj"]
-[ext_resource type="Texture2D" uid="uid://bj8fjmqvxhl4s" path="res://assets/stick_part.png" id="7_nenq2"]
 
 [sub_resource type="CapsuleShape2D" id="CapsuleShape2D_vh74b"]
 radius = 77.5
 height = 308.00003
-
-[sub_resource type="ShaderMaterial" id="ShaderMaterial_ipns3"]
-resource_local_to_scene = true
-shader = ExtResource("1_md484")
-shader_parameter/portal_center_pos = Vector2(0, 0)
-shader_parameter/portal_radii = Vector2(0, 0)
-shader_parameter/falling_into_portal = false
 
 [node name="Enemy" type="Enemy" unique_id=1915612589]
 collision_mask = 0
@@ -31,7 +20,6 @@ scale = Vector2(0.99999994, 0.99999994)
 shape = SubResource("CapsuleShape2D_vh74b")
 
 [node name="Scaling" type="Node2D" parent="." unique_id=1524342588]
-material = SubResource("ShaderMaterial_ipns3")
 
 [node name="EnemySprite" parent="Scaling" unique_id=563595049 instance=ExtResource("2_c4w8v")]
 
@@ -50,28 +38,6 @@ collision_mask = 2
 position = Vector2(49, -1)
 target_position = Vector2(0, 25)
 collision_mask = 2
-
-[node name="BloodSplash" type="FluidSplash" parent="Scaling" unique_id=924349886]
-particle_amount = Vector2i(8, 12)
-drop_angle_degree_range = 45
-drop_velocity_range = Vector2i(300, 400)
-drop_scale_range = Vector2(0.04, 0.07)
-drop_texture = ExtResource("5_c4w8v")
-drop_gravity = 250.0
-puddle_texture = ExtResource("6_xwavj")
-puddle_base_scale = 3.0
-puddle_scale_growth = 0.05
-modulate = Color(0.7, 0.11200002, 0.11200002, 1)
-
-[node name="LimbsSplash" type="FluidSplash" parent="Scaling" unique_id=2075083816]
-particle_amount = Vector2i(5, 8)
-drop_angle_degree_range = 75
-drop_velocity_range = Vector2i(200, 300)
-drop_scale_range = Vector2(0.2, 0.3)
-drop_texture = ExtResource("7_nenq2")
-drop_gravity = 250.0
-puddle_base_scale = 3.0
-puddle_scale_growth = 0.05
 
 [node name="Feet" type="PortalKey" parent="Scaling" unique_id=1791598395 node_paths=PackedStringArray("enemy_parent")]
 enemy_parent = NodePath("../..")

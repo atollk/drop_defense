@@ -32,11 +32,7 @@ impl EnemySprite {
     node_getter!(FluidSplash, "LimbsSplash");
     node_getter!(AnimatedSprite2D, "BodySprite");
     node_getter_named!(Sprite2D, "WeaponHand/Weapon", get_node_weapon);
-    node_getter_named!(
-        AnimationPlayer,
-        "Scaling/AnimationPlayer",
-        get_node_animation_player
-    );
+    node_getter!(AnimationPlayer, "AnimationPlayer");
 
     pub fn get_shader_material(&self) -> Gd<ShaderMaterial> {
         self.base().get_material().unwrap().cast()

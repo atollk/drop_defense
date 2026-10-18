@@ -1,5 +1,4 @@
-use godot::classes::input::CursorShape;
-use godot::classes::{Area2D, CollisionShape2D, Input, RigidBody2D};
+use godot::classes::{Area2D, CollisionShape2D, RigidBody2D};
 use godot::prelude::*;
 use itertools::Itertools;
 
@@ -29,57 +28,51 @@ impl Draggable {
 
     #[signal]
     pub fn drag_ended();
+
+    #[signal]
+    pub fn cursor_changed();
 }
 
 impl Draggable {
-    pub fn drag_on_mouse_event(button_down: bool, draggables: &mut [Gd<Self>]) {
+    pub fn is_grabbed(&self) -> bool {
+        self.grabbed_at.is_some()
+    }
+
+    pub fn is_mouse_over(&self) -> bool {
+        self.mouse_is_over
+    }
+
+    pub fn drag_on_mouse_event<'a>(
+        button_down: bool,
+        draggables: impl IntoIterator<Item = &'a mut Gd<Self>>,
+    ) {
+        let draggables = draggables.into_iter().map(|d| d.bind_mut());
         if button_down {
-            if draggables.iter().any(|d| d.bind().grabbed_at.is_some()) {
-                panic!("We were dragging an enemy already and sent a mouse press during that.")
-            }
             const DRAG_ENEMIES_AT_ONCE: usize = 1;
-            for mut draggable in draggables
-                .iter_mut()
-                .map(|d| d.bind_mut())
-                .filter(|d| d.can_be_dragged && d.mouse_is_over)
-                .take(DRAG_ENEMIES_AT_ONCE)
-            {
+            let mut grabbed_count = 0;
+            for mut draggable in draggables {
+                assert!(
+                    !draggable.is_grabbed(),
+                    "We were dragging an enemy already and sent a mouse press during that."
+                );
+                if !draggable.can_be_dragged || !draggable.mouse_is_over {
+                    continue;
+                }
+                if grabbed_count >= DRAG_ENEMIES_AT_ONCE {
+                    continue;
+                }
+                grabbed_count += 1;
                 draggable.grabbed_at = Some(draggable.base().get_local_mouse_position());
                 draggable.signals().drag_started().emit();
             }
         } else {
-            for mut draggable in draggables
-                .iter_mut()
-                .map(|d| d.bind_mut())
-                .filter(|d| d.grabbed_at.is_some())
-            {
-                draggable.grabbed_at = None;
-                draggable.signals().drag_ended().emit();
+            for mut draggable in draggables {
+                if draggable.is_grabbed() {
+                    draggable.grabbed_at = None;
+                    draggable.signals().drag_ended().emit();
+                }
             }
         }
-    }
-
-    fn update_cursor(&self) {
-        // TODO: there can probably be conflicts if grabbing one enemy and hovering over another
-        let shape = if self.grabbed_at.is_some() {
-            CursorShape::MOVE
-        } else {
-            if self.mouse_is_over {
-                CursorShape::POINTING_HAND
-            } else {
-                CursorShape::ARROW
-            }
-        };
-        Input::singleton()
-            .set_default_cursor_shape_ex()
-            .shape(shape)
-            .done();
-    }
-
-    /// Connected to a signal whenever the mouse cursor enters or leaves the hitbox.
-    fn on_mouse_entered(&mut self, entered: bool) {
-        self.mouse_is_over = entered;
-        self.update_cursor();
     }
 
     /// Called in [physics_process] while the enemy is being dragged to apply the necessary forces.
@@ -131,12 +124,14 @@ impl INode2D for Draggable {
         let area = {
             let mut area = Area2D::new_alloc();
             area.set_name(AREA_NODE_NAME);
-            area.signals()
-                .mouse_entered()
-                .connect_other(self, |s| s.on_mouse_entered(true));
-            area.signals()
-                .mouse_exited()
-                .connect_other(self, |s| s.on_mouse_entered(false));
+            area.signals().mouse_entered().connect_other(self, |s| {
+                s.mouse_is_over = true;
+                s.signals().cursor_changed().emit();
+            });
+            area.signals().mouse_exited().connect_other(self, |s| {
+                s.mouse_is_over = false;
+                s.signals().cursor_changed().emit();
+            });
             area
         };
         self.base_mut().add_child(&area);

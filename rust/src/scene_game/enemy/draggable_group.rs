@@ -1,17 +1,19 @@
 //! Add this node to your scene to handle drag-and-drop mechanic of enemies.
 
 use crate::scene_game::enemy::draggable::Draggable;
-use godot::classes::{INode2D, InputEvent, InputEventMouseButton, Node2D};
+use godot::classes::input::CursorShape;
+use godot::classes::{INode2D, Input, InputEvent, InputEventMouseButton, Node2D};
 use godot::global::MouseButton;
-use godot::obj::Gd;
+use godot::obj::{Gd, Singleton};
 use godot::prelude::{Base, GodotClass, godot_api};
+use godot::signal::ConnectHandle;
 use itertools::Itertools;
 
 /// A helper node that groups together multiple `Draggable` nodes so only one of them can be grabbed at once.
 #[derive(GodotClass)]
 #[class(base=Node2D, init)]
 pub struct DraggableGroup {
-    draggables: Vec<Gd<Draggable>>,
+    draggables: Vec<(Gd<Draggable>, ConnectHandle)>,
     base: Base<Node2D>,
 }
 
@@ -27,21 +29,49 @@ impl DraggableGroup {
         } else {
             return;
         };
-        Draggable::drag_on_mouse_event(button_down, &mut self.draggables);
+        Draggable::drag_on_mouse_event(
+            button_down,
+            &mut self.draggables.iter_mut().map(|(a, _)| a),
+        );
     }
 
     pub fn add_draggable(&mut self, draggable: Gd<Draggable>) {
-        self.draggables.push(draggable);
+        let signal_handle = draggable
+            .signals()
+            .cursor_changed()
+            .connect_other(self, |s| s.update_cursor());
+        self.draggables.push((draggable, signal_handle));
     }
 
     pub fn remove_draggable(&mut self, draggable: Gd<Draggable>) {
-        self.draggables.remove(
-            self.draggables
-                .iter()
-                .find_position(|d| **d == draggable)
-                .unwrap()
-                .0,
-        );
+        let position = self
+            .draggables
+            .iter()
+            .find_position(|(d, _)| *d == draggable)
+            .unwrap()
+            .0;
+        let (_, signal_handle) = self.draggables.remove(position);
+        signal_handle.disconnect();
+    }
+
+    fn update_cursor(&self) {
+        let shape = {
+            let grabbed = self.draggables.iter().find(|d| d.0.bind().is_grabbed());
+            if grabbed.is_some() {
+                CursorShape::MOVE
+            } else {
+                let hovered = self.draggables.iter().find(|d| d.0.bind().is_mouse_over());
+                if hovered.is_some() {
+                    CursorShape::POINTING_HAND
+                } else {
+                    CursorShape::ARROW
+                }
+            }
+        };
+        Input::singleton()
+            .set_default_cursor_shape_ex()
+            .shape(shape)
+            .done();
     }
 }
 

@@ -12,13 +12,13 @@ pub enum EnemyState {
 impl EnemyState {
     pub const fn animation_name(&self) -> &'static str {
         match self {
-            EnemyState::Walking => "Walk",
-            EnemyState::Dragged => "Stand",
-            EnemyState::Falling => "Stand",
-            EnemyState::Attacking => "Attack",
-            EnemyState::StandingUp => "StandUp",
-            EnemyState::Dying => "Death",
-            EnemyState::Swallowed => "Stand",
+            EnemyState::Walking => "Enemy/Walk",
+            EnemyState::Dragged => "Enemy/Stand",
+            EnemyState::Falling => "Enemy/Stand",
+            EnemyState::Attacking => "Enemy/Attack",
+            EnemyState::StandingUp => "Enemy/StandUp",
+            EnemyState::Dying => "Enemy/Death",
+            EnemyState::Swallowed => "Enemy/Stand",
         }
     }
 
