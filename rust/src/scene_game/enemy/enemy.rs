@@ -4,6 +4,7 @@ use crate::portal::portal::Portal;
 use crate::scene_game::enemy::draggable::Draggable;
 use crate::scene_game::enemy::enemy_sprite::EnemySprite;
 use crate::scene_game::enemy::enemy_state::EnemyState;
+use crate::scene_game::portal_key::PortalEntrant;
 use crate::singletons::GameStats;
 use godot::classes::{CollisionShape2D, IRigidBody2D, Path2D, RayCast2D, RigidBody2D};
 use godot::prelude::*;
@@ -204,27 +205,6 @@ impl Enemy {
             self.set_state(EnemyState::Walking);
         }
     }
-
-    pub fn entered_portal(&mut self, portal: &Portal) {
-        self.inside_portal = Some(portal.to_gd());
-        self.get_node_enemy_sprite()
-            .bind_mut()
-            .set_inside_portal(self.inside_portal.clone());
-    }
-
-    pub fn exited_portal(&mut self, portal: &Portal) {
-        if self.is_falling_down() {
-            self.signals()
-                .swallowed_by_portal()
-                .emit(portal.portal_index);
-            self.set_state(EnemyState::Swallowed);
-        } else {
-            self.inside_portal = None;
-            self.get_node_enemy_sprite()
-                .bind_mut()
-                .set_inside_portal(self.inside_portal.clone());
-        }
-    }
 }
 
 #[godot_api]
@@ -296,6 +276,30 @@ impl IRigidBody2D for Enemy {
             self.fall_height = self.fall_height.min(self.base().get_global_position().y);
         } else {
             self.fall_height = f32::INFINITY;
+        }
+    }
+}
+
+#[godot_dyn]
+impl PortalEntrant for Enemy {
+    fn entered_portal(&mut self, portal: &Portal) {
+        self.inside_portal = Some(portal.to_gd());
+        self.get_node_enemy_sprite()
+            .bind_mut()
+            .set_inside_portal(self.inside_portal.clone());
+    }
+
+    fn exited_portal(&mut self, portal: &Portal) {
+        if self.is_falling_down() {
+            self.signals()
+                .swallowed_by_portal()
+                .emit(portal.portal_index);
+            self.set_state(EnemyState::Swallowed);
+        } else {
+            self.inside_portal = None;
+            self.get_node_enemy_sprite()
+                .bind_mut()
+                .set_inside_portal(self.inside_portal.clone());
         }
     }
 }

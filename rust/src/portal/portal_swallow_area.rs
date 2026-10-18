@@ -30,19 +30,17 @@ impl PortalSwallowArea {
             .signals()
             .area_entered()
             .connect_other(portal, |s, portal_key_area| {
-                // TODO: it would be nicer if this was using an interface rather than hardcoded for Enemies
                 let portal_key = portal_key_area.get_parent().unwrap().cast::<PortalKey>();
-                let mut enemy = portal_key.bind().enemy_parent.clone().unwrap();
-                enemy.bind_mut().entered_portal(s);
+                let mut entrant = portal_key.bind().entrant_ancestor.clone().unwrap();
+                entrant.dyn_bind_mut().entered_portal(s);
             });
         self.base()
             .signals()
             .area_exited()
             .connect_other(portal, |s, portal_key_area| {
-                // TODO: it would be nicer if this was using an interface rather than hardcoded for Enemies
                 let portal_key = portal_key_area.get_parent().unwrap().cast::<PortalKey>();
-                let mut enemy = portal_key.bind().enemy_parent.clone().unwrap();
-                enemy.bind_mut().exited_portal(s);
+                let mut entrant = portal_key.bind().entrant_ancestor.clone().unwrap();
+                entrant.dyn_bind_mut().exited_portal(s);
             });
     }
 }

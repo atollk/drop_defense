@@ -1,4 +1,4 @@
-use crate::scene_game::enemy::enemy::Enemy;
+use crate::portal::portal::Portal;
 use godot::classes::{Area2D, CircleShape2D, CollisionShape2D};
 use godot::prelude::*;
 
@@ -7,7 +7,8 @@ use godot::prelude::*;
 #[class(init, base=Node2D)]
 pub struct PortalKey {
     #[export]
-    pub enemy_parent: Option<Gd<Enemy>>,
+    // TODO: emit a warning if this is assigned incorrectly; or remove it and infer it from the scene tree
+    pub entrant_ancestor: Option<DynGd<Node2D, dyn PortalEntrant>>,
 
     #[export(flags_2d_physics)]
     layers_2d_physics: u32,
@@ -40,4 +41,9 @@ impl INode2D for PortalKey {
         };
         self.base_mut().add_child(&area);
     }
+}
+
+pub trait PortalEntrant {
+    fn entered_portal(&mut self, portal: &Portal);
+    fn exited_portal(&mut self, portal: &Portal);
 }

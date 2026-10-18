@@ -1,10 +1,18 @@
 [gd_scene format=3 uid="uid://bmqpde5ecmmsg"]
 
 [ext_resource type="PackedScene" uid="uid://dodvq4oy2k2g" path="res://scenes/enemy_sprite.tscn" id="2_c4w8v"]
+[ext_resource type="Shader" uid="uid://dd1jlqlin2r0m" path="res://shaders/enemy.gdshader" id="2_md0e3"]
 
 [sub_resource type="CapsuleShape2D" id="CapsuleShape2D_vh74b"]
 radius = 77.5
 height = 308.00003
+
+[sub_resource type="ShaderMaterial" id="ShaderMaterial_4ra3w"]
+resource_local_to_scene = true
+shader = ExtResource("2_md0e3")
+shader_parameter/portal_center_pos = Vector2(0, 0)
+shader_parameter/portal_radii = Vector2(0, 0)
+shader_parameter/falling_into_portal = false
 
 [node name="Enemy" type="Enemy" unique_id=1915612589]
 collision_mask = 2
@@ -23,6 +31,7 @@ shape = SubResource("CapsuleShape2D_vh74b")
 [node name="Scaling" type="Node2D" parent="." unique_id=1524342588]
 
 [node name="EnemySprite" parent="Scaling" unique_id=563595049 instance=ExtResource("2_c4w8v")]
+material = SubResource("ShaderMaterial_4ra3w")
 
 [node name="GroundCast" type="Node2D" parent="Scaling" unique_id=1546079193]
 
@@ -40,8 +49,8 @@ position = Vector2(49, -1)
 target_position = Vector2(0, 25)
 collision_mask = 2
 
-[node name="Feet" type="PortalKey" parent="Scaling" unique_id=1791598395 node_paths=PackedStringArray("enemy_parent")]
-enemy_parent = NodePath("../..")
+[node name="Feet" type="PortalKey" parent="Scaling" unique_id=1791598395 node_paths=PackedStringArray("entrant_ancestor")]
+entrant_ancestor = NodePath("../..")
 layers_2d_physics = 4
 
 [node name="Draggable" type="Draggable" parent="Scaling" unique_id=627898890]
