@@ -224,9 +224,6 @@ impl IRigidBody2D for Enemy {
     }
 
     fn ready(&mut self) {
-        // TODO(debug): remove once the web portal placement issue is solved.
-        godot_print!("Enemy.ready");
-
         self.get_node_draggable().tap_mut(|draggable| {
             draggable
                 .signals()
@@ -256,9 +253,6 @@ impl IRigidBody2D for Enemy {
     }
 
     fn process(&mut self, delta: f64) {
-        // TODO(debug): remove once the web portal placement issue is solved.
-        godot_print!("Enemy.process");
-
         self.update_path_progress(delta / 100.0 * self.speed as f64);
         if self.fell_on_the_ground() {
             self.on_ground_fall();

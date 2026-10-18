@@ -124,52 +124,6 @@ impl SceneGame {
 #[godot_api]
 impl INode2D for SceneGame {
     fn ready(&mut self) {
-        // TODO(debug): remove once the web portal placement issue is solved.
-        {
-            let db = godot::classes::ClassDb::singleton();
-            for class in [
-                "DropPortal",
-                "PortalSwallowArea",
-                "PortalKey",
-                "Enemy",
-                "SceneGame",
-            ] {
-                godot_print!(
-                    "[portal-debug] ClassDb {class}: exists={} can_instantiate={} parent={}",
-                    db.class_exists(class),
-                    db.can_instantiate(class),
-                    db.get_parent_class(class),
-                );
-            }
-            godot_print!(
-                "[portal-debug] Node2D inheritors containing Portal/Drop: {:?}",
-                db.get_inheriters_from_class("Node2D")
-                    .to_vec()
-                    .into_iter()
-                    .filter(|c| {
-                        let c = c.to_string();
-                        c.contains("Portal") || c.contains("Drop")
-                    })
-                    .collect::<Vec<_>>()
-            );
-        }
-        for name in ["Left", "Center", "Right"] {
-            let path = format!("Portals/{name}");
-            match self.base().get_node_or_null(&path) {
-                Some(node) => {
-                    godot_print!(
-                        "[portal-debug] {path}: class={} script={:?} children={:?}",
-                        node.get_class(),
-                        node.get_script(),
-                        node.get_children()
-                            .iter_shared()
-                            .map(|c| c.get_class())
-                            .collect::<Vec<_>>()
-                    );
-                }
-                None => godot_print!("[portal-debug] {path}: MISSING"),
-            }
-        }
         self.set_ground_from_path();
 
         // Connect and start the timer.
