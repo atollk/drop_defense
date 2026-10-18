@@ -26,7 +26,7 @@ noise = SubResource("FastNoiseLite_nj2p1")
 color_ramp = SubResource("Gradient_sk18m")
 seamless = true
 
-[node name="Portal" type="Portal" unique_id=1336740058]
+[node name="Portal" type="DropPortal" unique_id=1336740058]
 transform_duration_ms = 150
 
 [node name="Sprite2D" type="Sprite2D" parent="." unique_id=1663122532]

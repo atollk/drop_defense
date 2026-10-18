@@ -9,7 +9,7 @@ use std::collections::HashMap;
 use std::time::Duration;
 
 #[derive(GodotClass)]
-#[class(tool, init, base=Node2D)]
+#[class(tool, init, base=Node2D, rename=DropPortal)]
 pub struct Portal {
     #[export]
     pub transform_duration_ms: u32,
