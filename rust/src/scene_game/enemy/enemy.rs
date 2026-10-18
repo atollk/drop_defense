@@ -29,7 +29,7 @@ pub struct Enemy {
 
     /// The weapon used by this enemy.
     #[export()]
-    #[var(get=get_weapon, set=set_weapon)]
+    #[var(get, set)]
     weapon: Option<Gd<EnemyWeapon>>,
 
     /// The progress (from 0 to 1) along [path].
@@ -209,7 +209,7 @@ impl Enemy {
         self.inside_portal = Some(portal.to_gd());
         self.get_node_enemy_sprite()
             .bind_mut()
-            .set_inside_portal(true);
+            .set_inside_portal(self.inside_portal.clone());
     }
 
     pub fn exited_portal(&mut self, portal: &Portal) {
@@ -222,7 +222,7 @@ impl Enemy {
             self.inside_portal = None;
             self.get_node_enemy_sprite()
                 .bind_mut()
-                .set_inside_portal(false);
+                .set_inside_portal(self.inside_portal.clone());
         }
     }
 }
@@ -277,11 +277,6 @@ impl IRigidBody2D for Enemy {
         if self.fell_on_the_ground() {
             self.on_ground_fall();
         }
-        if let Some(portal) = self.inside_portal.clone() {
-            self.get_node_enemy_sprite()
-                .bind_mut()
-                .sync_shader_to_portal(&portal);
-        };
 
         if self.state == EnemyState::Attacking {
             let mut game_stats_singleton = GameStats::singleton();

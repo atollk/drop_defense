@@ -11,6 +11,7 @@
 [ext_resource type="Texture2D" uid="uid://bj8fjmqvxhl4s" path="res://assets/stick_part.png" id="9_tkak5"]
 
 [sub_resource type="ShaderMaterial" id="ShaderMaterial_psbnu"]
+resource_local_to_scene = true
 shader = ExtResource("1_puuyl")
 shader_parameter/portal_center_pos = Vector2(0, 0)
 shader_parameter/portal_radii = Vector2(0, 0)

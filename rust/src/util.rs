@@ -5,10 +5,25 @@ use std::ops::{Add, Div, RangeInclusive, Sub};
  */
 #[macro_export]
 macro_rules! node_getter {
-    ($typ:ty, $name:literal) => {
+    // Entry point
+    ($first:ident $(/ $rest:ident)* : $typ:ty) => {
+        $crate::node_getter!(
+            @last
+            [concat!(stringify!($first) $(, "/", stringify!($rest))*)]
+            $first $($rest)* : $typ
+        );
+    };
+
+    // Exactly one ident left: it's the last one, so emit
+    (@last [$path:expr] $last:ident : $typ:ty) => {
         ::paste::paste! {
-            $crate::node_getter_named!($typ, $name, [<get_node_ $name:snake>]);
+            $crate::node_getter_named!($typ, $path, [<get_node_ $last:snake>]);
         }
+    };
+
+    // More than one left: drop the first and recurse
+    (@last [$path:expr] $x:ident $($rest:ident)+ : $typ:ty) => {
+        $crate::node_getter!(@last [$path] $($rest)+ : $typ);
     };
 }
 
@@ -17,7 +32,7 @@ macro_rules! node_getter {
  */
 #[macro_export]
 macro_rules! node_getter_named {
-    ($typ:ty, $node_name:literal, $vis:vis $function_name:ident) => {
+    ($typ:ty, $node_name:expr, $vis:vis $function_name:ident) => {
         $vis fn $function_name(&self) -> godot::obj::Gd<$typ> {
             use godot::obj::WithBaseField;
             self.base().get_node_as($node_name)
@@ -31,10 +46,25 @@ macro_rules! node_getter_named {
  */
 #[macro_export]
 macro_rules! node_try_getter {
-    ($typ:ty, $name:literal) => {
+    // Entry point
+    ($first:ident $(/ $rest:ident)* : $typ:ty) => {
+        $crate::node_try_getter!(
+            @last
+            [concat!(stringify!($first) $(, "/", stringify!($rest))*)]
+            $first $($rest)* : $typ
+        );
+    };
+
+    // Exactly one ident left: it's the last one, so emit
+    (@last [$path:expr] $last:ident : $typ:ty) => {
         ::paste::paste! {
-            $crate::node_try_getter_named!($typ, $name, [<try_get_node_ $name:snake>]);
+            $crate::node_try_getter_named!($typ, $path, [<get_node_ $last:snake>]);
         }
+    };
+
+    // More than one left: drop the first and recurse
+    (@last [$path:expr] $x:ident $($rest:ident)+ : $typ:ty) => {
+        $crate::node_try_getter!(@last [$path] $($rest)+ : $typ);
     };
 }
 

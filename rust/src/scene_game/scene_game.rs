@@ -1,8 +1,8 @@
 use crate::enemy_weapon::EnemyWeapon;
+use crate::node_getter;
 use crate::scene_game::enemy::draggable_group::DraggableGroup;
 use crate::scene_game::enemy::enemy::Enemy;
 use crate::singletons::GameStats;
-use crate::{node_getter, node_getter_named};
 use godot::classes::{CollisionPolygon2D, ColorRect, Path2D, Sprite2D, StaticBody2D, Timer};
 use godot::prelude::*;
 use rand::prelude::IndexedRandom;
@@ -14,13 +14,13 @@ pub struct SceneGame {
 }
 
 impl SceneGame {
-    node_getter!(Sprite2D, "Background");
-    node_getter!(Path2D, "WalkPath");
-    node_getter!(StaticBody2D, "GroundBody");
-    node_getter!(DraggableGroup, "Enemies");
-    node_getter_named!(ColorRect, "UI/LifeBarRed", get_node_life_bar_red);
-    node_getter_named!(ColorRect, "UI/LifeBarGreen", get_node_life_bar_green);
-    node_getter!(Timer, "SpawnTimer");
+    node_getter!(Background: Sprite2D);
+    node_getter!(WalkPath: Path2D);
+    node_getter!(Walls/GroundBody: StaticBody2D);
+    node_getter!(Enemies: DraggableGroup);
+    node_getter!(UI/LifeBarRed: ColorRect);
+    node_getter!(UI/LifeBarGreen: ColorRect);
+    node_getter!(SpawnTimer: Timer);
 
     /// Creates a collision object of the ground, based on the path.
     fn set_ground_from_path(&mut self) {
@@ -77,7 +77,7 @@ impl SceneGame {
                 s.get_node_enemies()
                     .bind_mut()
                     .remove_draggable(enemy_node.bind().get_node_draggable());
-                // TODO
+                // TODO: implement the logic for an enemy being swallowed
                 godot_print!("Portal {}", portal_index);
             }
         };

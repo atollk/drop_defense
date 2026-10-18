@@ -30,7 +30,7 @@ pub struct Portal {
 }
 
 impl Portal {
-    node_getter!(Sprite2D, "Sprite2D");
+    node_getter!(Sprite2D: Sprite2D);
 
     fn transform(&mut self, target_state: usize, duration: Duration) {
         let sprite_material = self

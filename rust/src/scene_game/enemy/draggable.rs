@@ -2,8 +2,6 @@ use godot::classes::{Area2D, CollisionShape2D, RigidBody2D};
 use godot::prelude::*;
 use itertools::Itertools;
 
-// TODO: enemies can be dragged below the floor and fall out of bounds
-
 const AREA_NODE_NAME: &str = "Area2D";
 
 #[derive(GodotClass)]

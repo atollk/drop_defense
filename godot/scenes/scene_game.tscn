@@ -12,9 +12,17 @@ point_count = 7
 [sub_resource type="WorldBoundaryShape2D" id="WorldBoundaryShape2D_vh74b"]
 normal = Vector2(1, 0)
 
-[sub_resource type="WorldBoundaryShape2D" id="WorldBoundaryShape2D_1bfyv"]
+[sub_resource type="WorldBoundaryShape2D" id="WorldBoundaryShape2D_6ecnt"]
 normal = Vector2(-1, 0)
-distance = -1280.0
+distance = -1986.0
+
+[sub_resource type="GDScript" id="GDScript_6ecnt"]
+script/source = "@tool
+extends CollisionShape2D
+
+func _process(_delta: float) -> void:
+	self.shape.distance = -get_viewport_rect().end.x
+"
 
 [sub_resource type="CapsuleShape2D" id="CapsuleShape2D_vh74b"]
 radius = 200.0
@@ -30,18 +38,23 @@ texture = ExtResource("1_1bfyv")
 position = Vector2(0, 280)
 curve = SubResource("Curve2D_vh74b")
 
-[node name="GroundBody" type="StaticBody2D" parent="." unique_id=912672044]
-collision_layer = 3
+[node name="Walls" type="Node2D" parent="." unique_id=474343225]
 
-[node name="LeftWall" type="StaticBody2D" parent="." unique_id=885797533]
+[node name="GroundBody" type="StaticBody2D" parent="Walls" unique_id=912672044]
+collision_layer = 2
 
-[node name="CollisionShape2D" type="CollisionShape2D" parent="LeftWall" unique_id=1868342393]
+[node name="LeftWall" type="StaticBody2D" parent="Walls" unique_id=885797533]
+collision_layer = 2
+
+[node name="CollisionShape2D" type="CollisionShape2D" parent="Walls/LeftWall" unique_id=1868342393]
 shape = SubResource("WorldBoundaryShape2D_vh74b")
 
-[node name="RightWall" type="StaticBody2D" parent="." unique_id=1496501428]
+[node name="RightWall" type="StaticBody2D" parent="Walls" unique_id=1496501428]
+collision_layer = 2
 
-[node name="CollisionShape2D" type="CollisionShape2D" parent="RightWall" unique_id=1624372387]
-shape = SubResource("WorldBoundaryShape2D_1bfyv")
+[node name="CollisionShape2D" type="CollisionShape2D" parent="Walls/RightWall" unique_id=1624372387]
+shape = SubResource("WorldBoundaryShape2D_6ecnt")
+script = SubResource("GDScript_6ecnt")
 
 [node name="Enemies" type="DraggableGroup" parent="." unique_id=1961607748]
 z_index = 1

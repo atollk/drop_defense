@@ -9,10 +9,10 @@ use godot::prelude::*;
 #[derive(GodotClass)]
 #[class(init, base=Node2D)]
 pub struct EnemySprite {
+    /// The portal this enemy is currently in, if any.
+    inside_portal: Option<Gd<Portal>>,
     base: Base<Node2D>,
 }
-
-// TODO: show Sprite2D icon for nodes of this class
 
 #[godot_api]
 impl EnemySprite {
@@ -28,22 +28,29 @@ impl EnemySprite {
 }
 
 impl EnemySprite {
-    node_getter!(FluidSplash, "BloodSplash");
-    node_getter!(FluidSplash, "LimbsSplash");
-    node_getter!(AnimatedSprite2D, "BodySprite");
+    node_getter!(BloodSplash: FluidSplash);
+    node_getter!(LimbsSplash: FluidSplash);
+    node_getter!(BodySprite: AnimatedSprite2D);
     node_getter_named!(Sprite2D, "WeaponHand/Weapon", get_node_weapon);
-    node_getter!(AnimationPlayer, "AnimationPlayer");
+    node_getter!(AnimationPlayer: AnimationPlayer);
 
     pub fn get_shader_material(&self) -> Gd<ShaderMaterial> {
         self.base().get_material().unwrap().cast()
     }
 
-    pub fn set_inside_portal(&mut self, value: bool) {
+    pub fn set_inside_portal(&mut self, value: Option<Gd<Portal>>) {
+        self.inside_portal = value;
         let mut material = self.get_shader_material();
-        material.set_shader_parameter("falling_into_portal", &value.to_variant());
+        material.set_shader_parameter(
+            "falling_into_portal",
+            &self.inside_portal.is_some().to_variant(),
+        );
     }
 
-    pub fn sync_shader_to_portal(&mut self, portal: &Gd<Portal>) {
+    fn sync_shader_to_portal(&mut self) {
+        let Some(portal) = self.inside_portal.as_ref() else {
+            return;
+        };
         let mut material = self.get_shader_material();
         material.set_shader_parameter(
             "portal_center_pos",
@@ -95,7 +102,6 @@ impl INode2D for EnemySprite {
     }
 
     fn process(&mut self, _delta: f64) {
-        // TODO: does it make sense to move this here?
-        // self.sync_shader_to_portal();
+        self.sync_shader_to_portal();
     }
 }
