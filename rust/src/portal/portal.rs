@@ -202,6 +202,16 @@ impl INode2D for Portal {
         self.close();
         self.connect_signals();
         self.base_mut().update_configuration_warnings();
+        // TODO(debug): remove once the web portal placement issue is solved.
+        godot_print!(
+            "[portal-debug] {} pos={:?} global_pos={:?} scale={:?} sprite_size={:?} area_scale={:?}",
+            self.base().get_path(),
+            self.base().get_position(),
+            self.base().get_global_position(),
+            self.base().get_scale(),
+            self.get_sprite_size(),
+            self.area_node.as_ref().map(|a| a.get_scale()),
+        );
     }
 
     fn on_notification(&mut self, what: CanvasItemNotification) {
