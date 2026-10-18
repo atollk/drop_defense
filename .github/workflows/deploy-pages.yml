@@ -15,8 +15,6 @@ permissions:
 env:
   GODOT_VERSION: 4.7.0
   EMSDK_VERSION: 3.1.74
-  # pinned: newer nightlies removed -Zemscripten-wasm-eh, which the wasm build needs
-  RUST_NIGHTLY: nightly-2026-02-01
 
 concurrency:
   group: pages
@@ -28,9 +26,8 @@ jobs:
     runs-on: ubuntu-latest
     steps:
       - uses: actions/checkout@v4
-      - uses: dtolnay/rust-toolchain@master
+      - uses: dtolnay/rust-toolchain@nightly
         with:
-          toolchain: ${{ env.RUST_NIGHTLY }}
           components: rust-src
           targets: wasm32-unknown-emscripten
       - uses: Swatinem/rust-cache@v2
@@ -44,7 +41,7 @@ jobs:
 
       - name: Build extension (wasm, no threads)
         working-directory: rust
-        run: cargo +${{ env.RUST_NIGHTLY }} build --release --features nothreads -Zbuild-std --target wasm32-unknown-emscripten
+        run: cargo +nightly build --release --features nothreads -Zbuild-std=std,panic_abort --target wasm32-unknown-emscripten
 
       - uses: chickensoft-games/setup-godot@v2
         with:

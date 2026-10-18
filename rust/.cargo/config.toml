@@ -5,5 +5,5 @@ rustflags = [
     "-C", "llvm-args=-enable-emscripten-cxx-exceptions=0",
     "-Z", "default-visibility=hidden",
     "-Z", "link-native-libraries=no",
-    "-Z", "emscripten-wasm-eh=false",
+    "-C", "panic=abort",
 ]
