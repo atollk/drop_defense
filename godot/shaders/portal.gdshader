@@ -47,4 +47,3 @@ void fragment() {
     // Compute color
     COLOR = vec4(vec3(rim_color * rim_mask + inner_color * inner_mask), outer_mask);
 }
-
