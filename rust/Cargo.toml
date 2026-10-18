@@ -6,11 +6,18 @@ edition = "2024"
 [lib]
 crate-type = ["cdylib"]  # Compile this crate to a dynamic C library.
 
+[features]
+# Web build without threads (no cross-origin isolation needed, works on GitHub Pages).
+nothreads = ["godot/experimental-wasm-nothreads"]
+
 [dependencies]
 godot = { version = "0.5.5", features = [
     "register-docs",
     # to silence a warning
-    "upcoming-editor-placeholders"
+    "upcoming-editor-placeholders",
+    # web export
+    "experimental-wasm",
+    "lazy-function-tables",
 ] }
 itertools = "0.15.0"
 paste = "1.0.15"
