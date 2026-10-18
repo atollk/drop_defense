@@ -12,6 +12,8 @@ macos.debug =            "res://../rust/target/debug/libdrop_defense.dylib"
 macos.release =          "res://../rust/target/release/libdrop_defense.dylib"
 macos.debug.arm64 =      "res://../rust/target/debug/libdrop_defense.dylib"
 macos.release.arm64 =    "res://../rust/target/release/libdrop_defense.dylib"
+web.debug.wasm32 =       "res://../rust/target/wasm32-unknown-emscripten/debug/drop_defense.wasm"
+web.release.wasm32 =     "res://../rust/target/wasm32-unknown-emscripten/release/drop_defense.wasm"
 
 [icons]
 PortalKey = "res://addons/at-icons/node2d/key.svg"

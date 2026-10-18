@@ -11,6 +11,10 @@ permissions:
   pages: write
   id-token: write
 
+env:
+  GODOT_VERSION: 4.7.0
+  EMSDK_VERSION: 3.1.74
+
 concurrency:
   group: pages
   cancel-in-progress: true
@@ -23,9 +27,37 @@ jobs:
       - uses: actions/checkout@v4
       - uses: dtolnay/rust-toolchain@nightly
         with:
-          targets: wasm32-unknown-unknown
+          components: rust-src
+          targets: wasm32-unknown-emscripten
       - uses: Swatinem/rust-cache@v2
-      # TODO
+        with:
+          workdir: rust
+          key: web
+
+      - uses: mymindstorm/setup-emsdk@v14
+        with:
+          version: ${{ env.EMSDK_VERSION }}
+
+      - name: Build extension (wasm, no threads)
+        working-directory: rust
+        run: cargo +nightly build --release --features nothreads -Zbuild-std --target wasm32-unknown-emscripten
+
+      - uses: chickensoft-games/setup-godot@v2
+        with:
+          version: ${{ env.GODOT_VERSION }}
+          use-dotnet: false
+          include-templates: true
+
+      - name: Export web build
+        run: |
+          mkdir -p build/web
+          godot --headless --path godot --import || true
+          godot --headless --path godot --export-release Web ../build/web/index.html
+          touch build/web/.nojekyll
+
+      - uses: actions/upload-pages-artifact@v3
+        with:
+          path: build/web
 
   deploy:
     name: deploy
