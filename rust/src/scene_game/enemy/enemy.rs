@@ -242,6 +242,11 @@ impl IRigidBody2D for Enemy {
             .signals()
             .animation_ended()
             .connect_other(self, Self::on_sprite_animation_finished);
+        self.get_node_enemy_sprite()
+            .signals()
+            .death_animation_ended()
+            .connect_other(self, |s| s.base_mut().queue_free());
+
         self.set_state(EnemyState::Walking);
 
         if self.base().get_scale() != Vector2::ONE {

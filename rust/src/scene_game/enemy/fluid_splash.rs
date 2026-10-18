@@ -212,13 +212,20 @@ impl ISprite2D for SplashPuddle {
 
     fn process(&mut self, delta: f64) {
         let scale_growth = Vector2::ONE * (delta as f32 * self.scale_growth);
-        self.base_mut().tap_mut(|base| {
+        let vanishing = {
+            let mut base = self.base_mut();
             let scale = base.get_scale() + scale_growth;
             base.set_scale(scale);
 
             let mut modulate = base.get_modulate();
             modulate.a -= delta as f32;
             base.set_modulate(modulate);
-        });
+
+            modulate.a <= 0.0
+        };
+        if vanishing {
+            let s = self.to_gd();
+            self.signals().vanish().emit(&s);
+        }
     }
 }

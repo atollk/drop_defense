@@ -19,6 +19,9 @@ impl EnemySprite {
     #[signal]
     pub fn animation_ended(animation_name: StringName);
 
+    #[signal]
+    pub fn death_animation_ended();
+
     pub fn set_weapon(&mut self, weapon: &Gd<EnemyWeapon>) {
         self.get_node_weapon()
             .set_texture(weapon.bind().texture.as_ref());
@@ -83,7 +86,7 @@ impl EnemySprite {
             self.get_node_blood_splash()
                 .signals()
                 .animation_ended()
-                .connect_other(self, |s| s.base_mut().queue_free());
+                .connect_other(self, |s| s.signals().death_animation_ended().emit());
         }
     }
 }
