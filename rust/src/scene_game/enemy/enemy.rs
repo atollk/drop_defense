@@ -224,6 +224,9 @@ impl IRigidBody2D for Enemy {
     }
 
     fn ready(&mut self) {
+        // TODO(debug): remove once the web portal placement issue is solved.
+        godot_print!("Enemy.ready");
+
         self.get_node_draggable().tap_mut(|draggable| {
             draggable
                 .signals()

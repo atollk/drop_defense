@@ -124,6 +124,24 @@ impl SceneGame {
 #[godot_api]
 impl INode2D for SceneGame {
     fn ready(&mut self) {
+        // TODO(debug): remove once the web portal placement issue is solved.
+        for name in ["Left", "Center", "Right"] {
+            let path = format!("Portals/{name}");
+            match self.base().get_node_or_null(&path) {
+                Some(node) => {
+                    godot_print!(
+                        "[portal-debug] {path}: class={} script={:?} children={:?}",
+                        node.get_class(),
+                        node.get_script(),
+                        node.get_children()
+                            .iter_shared()
+                            .map(|c| c.get_class())
+                            .collect::<Vec<_>>()
+                    );
+                }
+                None => godot_print!("[portal-debug] {path}: MISSING"),
+            }
+        }
         self.set_ground_from_path();
 
         // Connect and start the timer.
