@@ -43,6 +43,12 @@ jobs:
         working-directory: rust
         run: cargo +nightly build --release --features nothreads -Zbuild-std=std,panic_abort --target wasm32-unknown-emscripten
 
+      # The headless export runs the Godot editor, which must load the extension natively;
+      # otherwise it drops the scene properties of all extension classes while converting scenes.
+      - name: Build extension (native, for the Godot editor)
+        working-directory: rust
+        run: cargo +nightly build
+
       - uses: chickensoft-games/setup-godot@v2
         with:
           version: ${{ env.GODOT_VERSION }}
