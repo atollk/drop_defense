@@ -212,6 +212,15 @@ impl INode2D for Portal {
             self.get_sprite_size(),
             self.area_node.as_ref().map(|a| a.get_scale()),
         );
+        godot_print!(
+            "[portal-debug] {} pos={:?} global_pos={:?} scale={:?} sprite_size={:?} area_scale={:?}",
+            self.base().get_path(),
+            self.base().get_position(),
+            self.base().get_global_position(),
+            self.base().get_scale(),
+            self.get_sprite_size(),
+            self.area_node.as_ref().map(|a| a.get_scale()),
+        );
     }
 
     fn on_notification(&mut self, what: CanvasItemNotification) {
