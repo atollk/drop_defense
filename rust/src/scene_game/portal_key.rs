@@ -30,16 +30,19 @@ impl PortalKey {
 
 #[godot_api]
 impl PortalKey {
+    #[signal]
+    pub fn enabled_changed(new_value: bool);
+
     #[func]
     pub fn get_enabled(&self) -> bool {
         self.get_node_area().is_monitorable()
     }
 
     #[func]
-    // TODO: it looks like changing this doesn't trigger exit/entry signals
     pub fn set_enabled(&mut self, value: bool) {
         self.get_node_area()
             .set_deferred("monitorable", &value.to_variant());
+        self.signals().enabled_changed().emit(value);
     }
 }
 

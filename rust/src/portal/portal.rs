@@ -191,7 +191,7 @@ impl Portal {
         let Some(mut swallow_area) = self.find_swallow_area().ok() else {
             return;
         };
-        swallow_area.bind_mut().connect_signals(self);
+        swallow_area.bind_mut().connect_signals(&self.to_gd());
     }
 
     /// Spawns a new Area2D node that covers the visible area of the portal.

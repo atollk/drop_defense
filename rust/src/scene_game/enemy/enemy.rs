@@ -143,16 +143,13 @@ impl Enemy {
         self.get_node_draggable().bind_mut().can_be_dragged = self.state.is_draggable();
 
         // Feet
-        self.get_node_feet().bind_mut().set_enabled(
-            self.state.is_portal_key()
-                || self
-                    .inside_portal
-                    .as_ref()
-                    .map(|portal| {
-                        portal.bind().get_state() == PortalState::Stable { is_open: true }
-                    })
-                    .unwrap_or(false),
-        );
+        let feet_enabled = self.state.is_portal_key()
+            || self
+                .inside_portal
+                .as_ref()
+                .map(|portal| portal.bind().get_state() == PortalState::Stable { is_open: true })
+                .unwrap_or(false);
+        self.get_node_feet().bind_mut().set_enabled(feet_enabled);
 
         // Gravity
         // TODO: maybe lower this if swallowed to give the portal a "viscosity"
