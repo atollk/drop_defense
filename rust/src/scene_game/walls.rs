@@ -41,6 +41,7 @@ impl INode2D for GameWalls {
 
             let mut left_wall = StaticBody2D::new_alloc();
             left_wall.add_child(&collision_shape);
+            left_wall.set_collision_layer(2);
             left_wall
         };
 
@@ -60,6 +61,7 @@ impl INode2D for GameWalls {
 
             let mut right_wall = StaticBody2D::new_alloc();
             right_wall.add_child(&collision_shape);
+            right_wall.set_collision_layer(2);
             right_wall
         };
 
@@ -98,6 +100,7 @@ fn create_ground_from_path(walk_path: &Gd<Path2D>, viewport_rect: Rect2) -> Gd<S
     let ground_body = {
         let mut ground_body = StaticBody2D::new_alloc();
         ground_body.add_child(&ground_shape);
+        ground_body.set_collision_layer(2);
         ground_body
     };
 

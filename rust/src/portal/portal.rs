@@ -31,7 +31,7 @@ pub struct Portal {
     base: Base<Node2D>,
 }
 
-#[derive(PartialEq)]
+#[derive(PartialEq, Clone, Copy)]
 pub enum PortalState {
     Stable { is_open: bool },
     Changing { is_opening: bool },
@@ -155,6 +155,10 @@ impl Portal {
 
     pub fn get_area_node(&self) -> Option<&Gd<Area2D>> {
         self.area_node.as_ref()
+    }
+
+    pub fn get_state(&self) -> PortalState {
+        self.state
     }
 
     pub fn get_sprite_size(&self) -> Vector2 {

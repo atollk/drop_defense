@@ -42,8 +42,7 @@ impl SceneGame {
                 s.get_node_enemies()
                     .bind_mut()
                     .remove_draggable(enemy_node.bind().get_node_draggable());
-                // TODO: implement the logic for an enemy being swallowed
-                godot_print!("Portal {}", portal_index);
+                s.on_enemy_swallowed_by_portal(&enemy_node, portal_index);
             }
         };
         {
@@ -63,13 +62,18 @@ impl SceneGame {
             .add_draggable(enemy_node.bind().get_node_draggable());
     }
 
+    fn on_enemy_swallowed_by_portal(&mut self, enemy: &Gd<Enemy>, portal_index: u8) {
+        // TODO: implement the logic for an enemy being swallowed
+        godot_print!("Portal {}", portal_index);
+    }
+
     /// Updates the health bar.
     fn update_health_bar(&mut self) {
         let max_size = self.get_node_life_bar_red().get_size();
         let game_stats_singleton = GameStats::singleton();
         let game_stats = game_stats_singleton.bind();
         let bar_size = Vector2::new(
-            max_size.x * game_stats.health as f32 / game_stats.max_health as f32,
+            max_size.x * game_stats.health / game_stats.max_health as f32,
             max_size.y,
         );
         self.get_node_life_bar_green().set_size(bar_size);

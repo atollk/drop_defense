@@ -7,7 +7,7 @@
 radius = 77.5
 height = 308.00003
 
-[sub_resource type="ShaderMaterial" id="ShaderMaterial_4ra3w"]
+[sub_resource type="ShaderMaterial" id="ShaderMaterial_md0e3"]
 resource_local_to_scene = true
 shader = ExtResource("2_md0e3")
 shader_parameter/portal_center_pos = Vector2(0, 0)
@@ -31,7 +31,7 @@ shape = SubResource("CapsuleShape2D_vh74b")
 [node name="Scaling" type="Node2D" parent="." unique_id=1524342588]
 
 [node name="EnemySprite" parent="Scaling" unique_id=563595049 instance=ExtResource("2_c4w8v")]
-material = SubResource("ShaderMaterial_4ra3w")
+material = SubResource("ShaderMaterial_md0e3")
 
 [node name="GroundCast" type="Node2D" parent="Scaling" unique_id=1546079193]
 
@@ -51,6 +51,6 @@ collision_mask = 2
 
 [node name="Feet" type="PortalKey" parent="Scaling" unique_id=1791598395 node_paths=PackedStringArray("entrant_ancestor")]
 entrant_ancestor = NodePath("../..")
-layers_2d_physics = 4
+collision_layer = 4
 
 [node name="Draggable" type="Draggable" parent="Scaling" unique_id=627898890]

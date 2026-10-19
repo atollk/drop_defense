@@ -49,4 +49,8 @@ impl EnemyState {
     pub const fn is_physics_frozen(&self) -> bool {
         matches!(self, EnemyState::Walking)
     }
+
+    pub const fn is_portal_key(&self) -> bool {
+        matches!(self, EnemyState::Dragged)
+    }
 }

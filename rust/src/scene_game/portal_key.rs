@@ -11,12 +11,37 @@ pub struct PortalKey {
     pub entrant_ancestor: Option<DynGd<Node2D, dyn PortalEntrant>>,
 
     #[export(flags_2d_physics)]
-    layers_2d_physics: u32,
+    collision_layer: u32,
+
+    #[export]
+    #[var(set, get)]
+    enabled: PhantomVar<bool>,
 
     base: Base<Node2D>,
 }
 
 const AREA_CHILD_NAME: &str = "Area2D";
+
+impl PortalKey {
+    fn get_node_area(&self) -> Gd<Area2D> {
+        self.base().get_node_as(AREA_CHILD_NAME)
+    }
+}
+
+#[godot_api]
+impl PortalKey {
+    #[func]
+    pub fn get_enabled(&self) -> bool {
+        self.get_node_area().is_monitorable()
+    }
+
+    #[func]
+    // TODO: it looks like changing this doesn't trigger exit/entry signals
+    pub fn set_enabled(&mut self, value: bool) {
+        self.get_node_area()
+            .set_deferred("monitorable", &value.to_variant());
+    }
+}
 
 #[godot_api]
 impl INode2D for PortalKey {
@@ -34,7 +59,7 @@ impl INode2D for PortalKey {
         let area = {
             let mut area = Area2D::new_alloc();
             area.set_name(AREA_CHILD_NAME);
-            area.set_collision_layer(self.layers_2d_physics);
+            area.set_collision_layer(self.collision_layer);
             area.set_collision_mask(0);
             area.add_child(&collision_shape);
             area

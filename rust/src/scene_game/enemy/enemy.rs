@@ -1,11 +1,11 @@
 use crate::enemy_weapon::EnemyWeapon;
-use crate::node_getter_named;
-use crate::portal::portal::Portal;
+use crate::portal::portal::{Portal, PortalState};
 use crate::scene_game::enemy::draggable::Draggable;
 use crate::scene_game::enemy::enemy_sprite::EnemySprite;
 use crate::scene_game::enemy::enemy_state::EnemyState;
-use crate::scene_game::portal_key::PortalEntrant;
+use crate::scene_game::portal_key::{PortalEntrant, PortalKey};
 use crate::singletons::GameStats;
+use crate::{node_getter, node_getter_named};
 use godot::classes::{CollisionShape2D, IRigidBody2D, Path2D, RayCast2D, RigidBody2D};
 use godot::prelude::*;
 use itertools::Itertools;
@@ -71,10 +71,11 @@ impl Enemy {
 
 // General logic
 impl Enemy {
-    node_getter_named!(Node2D, "Scaling/GroundCast", get_node_ground_cast);
-    node_getter_named!(CollisionShape2D, "BodyShape", get_node_body_shape);
+    node_getter!(Scaling/GroundCast: Node2D);
+    node_getter!(BodyShape: CollisionShape2D);
+    node_getter!(Scaling/EnemySprite: EnemySprite);
+    node_getter!(Scaling/Feet: PortalKey);
     node_getter_named!(Draggable, "Scaling/Draggable", pub get_node_draggable);
-    node_getter_named!(EnemySprite, "Scaling/EnemySprite", get_node_enemy_sprite);
 
     /// RigidBody2D does not support settings its scale directly, so we have to use this workaround
     /// by setting the scale of every child individually.
@@ -140,6 +141,18 @@ impl Enemy {
 
         // Draggable
         self.get_node_draggable().bind_mut().can_be_dragged = self.state.is_draggable();
+
+        // Feet
+        self.get_node_feet().bind_mut().set_enabled(
+            self.state.is_portal_key()
+                || self
+                    .inside_portal
+                    .as_ref()
+                    .map(|portal| {
+                        portal.bind().get_state() == PortalState::Stable { is_open: true }
+                    })
+                    .unwrap_or(false),
+        );
 
         // Gravity
         // TODO: maybe lower this if swallowed to give the portal a "viscosity"

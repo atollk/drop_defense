@@ -26,7 +26,8 @@ curve = SubResource("Curve2D_vh74b")
 [node name="Enemies" type="DraggableGroup" parent="." unique_id=1961607748]
 z_index = 1
 
-[node name="GameWalls" type="GameWalls" parent="." unique_id=836662793]
+[node name="GameWalls" type="GameWalls" parent="." unique_id=836662793 node_paths=PackedStringArray("walk_path")]
+walk_path = NodePath("../WalkPath")
 
 [node name="UI" type="Control" parent="." unique_id=117352088]
 layout_mode = 3
