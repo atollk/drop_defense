@@ -5,6 +5,7 @@ use godot::classes::tween::{EaseType, TransitionType};
 use godot::classes::{Area2D, CircleShape2D, CollisionShape2D, ShaderMaterial, Sprite2D, Tween};
 use godot::prelude::*;
 use itertools::Itertools;
+use std::cmp::PartialEq;
 use std::collections::HashMap;
 use std::time::Duration;
 
@@ -24,15 +25,56 @@ pub struct Portal {
 
     shader_transforms: ShaderTransforms,
     transform_tween: Option<Gd<Tween>>,
-    pub area_node: Option<Gd<Area2D>>,
+    area_node: Option<Gd<Area2D>>,
+    state: PortalState,
 
     base: Base<Node2D>,
+}
+
+#[derive(PartialEq)]
+pub enum PortalState {
+    Stable { is_open: bool },
+    Changing { is_opening: bool },
+}
+
+impl Default for PortalState {
+    fn default() -> Self {
+        Self::Stable { is_open: false }
+    }
+}
+
+impl PortalState {
+    fn value_of<'a, T>(&self, value: &'a ShaderTransformValue<T>) -> Option<&'a T> {
+        match self {
+            PortalState::Stable { is_open } => {
+                let index = if *is_open { 1 } else { 0 };
+                value.as_ref().map(|v| v.get(index).unwrap())
+            }
+            PortalState::Changing {
+                is_opening: _is_opening,
+            } => panic!(),
+        }
+    }
 }
 
 impl Portal {
     node_getter!(Sprite2D: Sprite2D);
 
-    fn transform(&mut self, target_state: usize, duration: Duration) {
+    fn transform(&mut self, to_open: bool, duration: Duration) {
+        // If we are already in the target state, or on the way there, do nothing.
+        if (self.state == PortalState::Stable { is_open: to_open }
+            || self.state
+                == PortalState::Changing {
+                    is_opening: to_open,
+                })
+        {
+            return;
+        }
+
+        self.state = PortalState::Changing {
+            is_opening: to_open,
+        };
+
         let sprite_material = self
             .get_node_sprite2_d()
             .get_material()
@@ -43,9 +85,9 @@ impl Portal {
             let mut shader_param_values: HashMap<&str, Variant> = HashMap::new();
             macro_rules! add_shader_param {
                 ($field:ident) => {
-                    if let Some(val) = self.shader_transforms.$field {
-                        shader_param_values
-                            .insert(stringify!($field), val[target_state].to_variant());
+                    let target_state = PortalState::Stable { is_open: to_open };
+                    if let Some(val) = target_state.value_of(&self.shader_transforms.$field) {
+                        shader_param_values.insert(stringify!($field), val.to_variant());
                     }
                 };
             }
@@ -94,9 +136,25 @@ impl Portal {
                 );
             }
 
+            // Transition the state
+            {
+                let callback = Callable::from_fn("set_portal_state", |args| {
+                    let args: &[&Variant; 2] = args.as_array().unwrap();
+                    let mut self_: Gd<Self> = args[0].to();
+                    let to_open: bool = args[1].to();
+                    self_.bind_mut().state = PortalState::Stable { is_open: to_open };
+                });
+                let callback = callback.bind(&[self.to_gd().to_variant(), to_open.to_variant()]);
+                tween.tween_callback(&callback);
+            }
+
             tween
         };
         self.transform_tween = Some(tween);
+    }
+
+    pub fn get_area_node(&self) -> Option<&Gd<Area2D>> {
+        self.area_node.as_ref()
     }
 
     pub fn get_sprite_size(&self) -> Vector2 {
@@ -109,11 +167,11 @@ impl Portal {
     }
 
     pub(crate) fn open(&mut self) {
-        self.transform(1, Duration::from_millis(500));
+        self.transform(true, Duration::from_millis(500));
     }
 
     pub(crate) fn close(&mut self) {
-        self.transform(0, Duration::from_millis(500));
+        self.transform(false, Duration::from_millis(500));
     }
 
     fn find_swallow_area(&self) -> Result<Gd<PortalSwallowArea>, String> {

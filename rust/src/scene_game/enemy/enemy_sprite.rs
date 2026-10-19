@@ -63,8 +63,7 @@ impl EnemySprite {
             "portal_radii",
             &portal
                 .bind()
-                .area_node
-                .as_ref()
+                .get_area_node()
                 .unwrap()
                 .get_global_scale()
                 .to_variant(),

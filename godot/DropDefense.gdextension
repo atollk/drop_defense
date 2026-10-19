@@ -18,3 +18,4 @@ web.release.wasm32 =     "res://../rust/target/wasm32-unknown-emscripten/release
 [icons]
 PortalKey = "res://addons/at-icons/node2d/key.svg"
 EnemySprite = "res://addons/godot-icons/Sprite2D.svg"
+GameWalls = "res://addons/godot-icons/StaticBody2D.svg"
