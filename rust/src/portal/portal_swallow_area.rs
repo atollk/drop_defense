@@ -1,6 +1,7 @@
 use crate::portal::portal::Portal;
 use crate::scene_game::portal_key::PortalKey;
 use godot::classes::Area2D;
+use godot::classes::object::ConnectFlags;
 use godot::obj::{Base, WithBaseField};
 use godot::prelude::{Gd, GodotClass};
 use godot::signal::ConnectHandle;
@@ -61,7 +62,7 @@ impl PortalSwallowArea {
         // are inside the portal.
         let signal_fn = {
             let portal = portal.clone();
-            move |s: &mut Self, enabled: bool| {
+            move |enabled: bool| {
                 if enabled {
                     entrant.dyn_bind_mut().entered_portal(&portal.bind());
                 } else {
@@ -72,7 +73,10 @@ impl PortalSwallowArea {
         let handle = portal_key
             .signals()
             .enabled_changed()
-            .connect_other(self, signal_fn);
+            .builder()
+            // This may be called from `Enemy.set_state`, which can cause double-bind errors.
+            .flags(ConnectFlags::DEFERRED)
+            .connect(signal_fn);
         self.portal_key_signal_handles.insert(portal_key, handle);
     }
 

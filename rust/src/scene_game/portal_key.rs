@@ -40,6 +40,9 @@ impl PortalKey {
 
     #[func]
     pub fn set_enabled(&mut self, value: bool) {
+        if value == self.get_enabled() {
+            return;
+        }
         self.get_node_area()
             .set_deferred("monitorable", &value.to_variant());
         self.signals().enabled_changed().emit(value);

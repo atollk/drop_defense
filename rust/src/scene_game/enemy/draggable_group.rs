@@ -3,8 +3,8 @@
 use crate::scene_game::enemy::draggable::Draggable;
 use godot::classes::input::CursorShape;
 use godot::classes::{INode2D, Input, InputEvent, InputEventMouseButton, Node2D};
-use godot::global::MouseButton;
-use godot::obj::{Gd, Singleton};
+use godot::global::{MouseButton, godot_warn};
+use godot::obj::{Gd, Singleton, WithBaseField};
 use godot::prelude::{Base, GodotClass, godot_api};
 use godot::signal::ConnectHandle;
 use itertools::Itertools;
@@ -47,9 +47,14 @@ impl DraggableGroup {
         let position = self
             .draggables
             .iter()
-            .find_position(|(d, _)| *d == draggable)
-            .unwrap()
-            .0;
+            .find_position(|(d, _)| *d == draggable);
+        let Some((position, _)) = position else {
+            godot_warn!(
+                "A `Draggable` was supposed to be removed from a `DraggableGroup` but it wasn't actually present there."
+            );
+            self.base().get_tree().quit(); // TODO: remove
+            return;
+        };
         let (_, signal_handle) = self.draggables.remove(position);
         signal_handle.disconnect();
     }

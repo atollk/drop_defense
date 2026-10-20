@@ -306,10 +306,13 @@ impl PortalEntrant for Enemy {
 
     fn exited_portal(&mut self, portal: &Portal) {
         if self.is_falling_down() {
-            self.signals()
-                .swallowed_by_portal()
-                .emit(portal.portal_index);
-            self.set_state(EnemyState::Swallowed);
+            // if-check to prevent some annoying workaround logic when the signal gets emitted twice.
+            if !matches!(self.state, EnemyState::Swallowed) {
+                self.signals()
+                    .swallowed_by_portal()
+                    .emit(portal.portal_index);
+                self.set_state(EnemyState::Swallowed);
+            }
         } else {
             self.inside_portal = None;
             self.get_node_enemy_sprite()
