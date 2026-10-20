@@ -137,6 +137,7 @@ impl Enemy {
 
     /// A setter for `self.state` that makes sure the other invariants are updated correctly.
     fn set_state(&mut self, new_state: EnemyState) {
+        godot_print!("Enemy.set_state = {:?}", new_state);
         self.state = new_state;
 
         // Draggable
@@ -149,6 +150,10 @@ impl Enemy {
                 .as_ref()
                 .map(|portal| portal.bind().get_state() == PortalState::Stable { is_open: true })
                 .unwrap_or(false);
+        godot_print!(
+            "Portal: {:?}",
+            self.inside_portal.as_ref().map(|p| p.bind().get_state())
+        );
         self.get_node_feet().bind_mut().set_enabled(feet_enabled);
 
         // Gravity
@@ -305,14 +310,19 @@ impl PortalEntrant for Enemy {
     }
 
     fn exited_portal(&mut self, portal: &Portal) {
-        if self.is_falling_down() {
+        if matches!(self.state, EnemyState::Swallowed) {
             // if-check to prevent some annoying workaround logic when the signal gets emitted twice.
-            if !matches!(self.state, EnemyState::Swallowed) {
-                self.signals()
-                    .swallowed_by_portal()
-                    .emit(portal.portal_index);
-                self.set_state(EnemyState::Swallowed);
-            }
+            return;
+        }
+
+        let swallowed_by_portal =
+            self.is_falling_down() && portal.get_state() == PortalState::Stable { is_open: true };
+
+        if swallowed_by_portal {
+            self.signals()
+                .swallowed_by_portal()
+                .emit(portal.portal_index);
+            self.set_state(EnemyState::Swallowed);
         } else {
             self.inside_portal = None;
             self.get_node_enemy_sprite()

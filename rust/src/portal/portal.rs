@@ -8,15 +8,18 @@ use itertools::Itertools;
 use std::cmp::PartialEq;
 use std::collections::HashMap;
 use std::time::Duration;
+use tap::TapOptional;
 
 #[derive(GodotClass)]
 #[class(tool, init, base=Node2D)]
 pub struct Portal {
     #[export]
-    pub transform_duration_ms: u32,
+    pub portal_index: u8,
 
     #[export]
-    pub portal_index: u8,
+    pub open_duration_seconds: f32,
+    #[export]
+    pub close_duration_seconds: f32,
 
     #[export_tool_button(fn = Self::open, name = "Open")]
     open_fn: PhantomVar<Callable>,
@@ -31,7 +34,7 @@ pub struct Portal {
     base: Base<Node2D>,
 }
 
-#[derive(PartialEq, Clone, Copy)]
+#[derive(Debug, PartialEq, Clone, Copy)]
 pub enum PortalState {
     Stable { is_open: bool },
     Changing { is_opening: bool },
@@ -61,6 +64,7 @@ impl Portal {
     node_getter!(Sprite2D: Sprite2D);
 
     fn transform(&mut self, to_open: bool, duration: Duration) {
+        godot_print!("Portal.transform({})", to_open);
         // If we are already in the target state, or on the way there, do nothing.
         if (self.state == PortalState::Stable { is_open: to_open }
             || self.state
@@ -142,14 +146,23 @@ impl Portal {
                     let args: &[&Variant; 2] = args.as_array().unwrap();
                     let mut self_: Gd<Self> = args[0].to();
                     let to_open: bool = args[1].to();
+                    godot_print!(
+                        "set_portal_state {:?}",
+                        PortalState::Stable { is_open: to_open }
+                    );
                     self_.bind_mut().state = PortalState::Stable { is_open: to_open };
                 });
                 let callback = callback.bind(&[self.to_gd().to_variant(), to_open.to_variant()]);
-                tween.tween_callback(&callback);
+                tween
+                    .tween_callback(&callback)
+                    .set_delay(duration.as_secs_f64());
             }
 
             tween
         };
+        self.transform_tween
+            .as_mut()
+            .tap_some_mut(|tween| tween.stop());
         self.transform_tween = Some(tween);
     }
 
@@ -171,11 +184,11 @@ impl Portal {
     }
 
     pub(crate) fn open(&mut self) {
-        self.transform(true, Duration::from_millis(500));
+        self.transform(true, Duration::from_secs_f32(self.open_duration_seconds));
     }
 
     pub(crate) fn close(&mut self) {
-        self.transform(false, Duration::from_millis(500));
+        self.transform(false, Duration::from_secs_f32(self.close_duration_seconds));
     }
 
     fn find_swallow_area(&self) -> Result<Gd<PortalSwallowArea>, String> {

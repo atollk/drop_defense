@@ -62,7 +62,7 @@ impl SceneGame {
             .add_draggable(enemy_node.bind().get_node_draggable());
     }
 
-    fn on_enemy_swallowed_by_portal(&mut self, enemy: &Gd<Enemy>, portal_index: u8) {
+    fn on_enemy_swallowed_by_portal(&mut self, _enemy: &Gd<Enemy>, portal_index: u8) {
         // TODO: implement the logic for an enemy being swallowed
         godot_print!("Portal {}", portal_index);
     }

@@ -17,27 +17,16 @@ pub struct PortalSwallowArea {
 
 impl PortalSwallowArea {
     pub fn connect_signals(&mut self, portal: &Gd<Portal>) {
-        // Connections for the open/close animation.
-        self.base()
-            .signals()
-            .area_entered()
-            .connect_other(portal, |s, _| {
-                s.open();
-            });
-        self.base()
-            .signals()
-            .area_exited()
-            .connect_other(portal, |s, _| {
-                s.close();
-            });
-        // Connections to the enemy.
         {
             let portal = portal.clone();
             self.base()
                 .signals()
                 .area_entered()
                 .connect_other(self, move |s, portal_key_area| {
-                    s.on_portal_key_entered(&portal, portal_key_area.get_parent().unwrap().cast());
+                    s.on_portal_key_entered(
+                        portal.clone(),
+                        portal_key_area.get_parent().unwrap().cast(),
+                    );
                 });
         }
         {
@@ -46,14 +35,18 @@ impl PortalSwallowArea {
                 .signals()
                 .area_exited()
                 .connect_other(self, move |s, portal_key_area| {
-                    s.on_portal_key_exited(&portal, portal_key_area.get_parent().unwrap().cast());
+                    s.on_portal_key_exited(
+                        portal.clone(),
+                        portal_key_area.get_parent().unwrap().cast(),
+                    );
                 });
         }
     }
 
-    fn on_portal_key_entered(&mut self, portal: &Gd<Portal>, portal_key: Gd<PortalKey>) {
+    fn on_portal_key_entered(&mut self, mut portal: Gd<Portal>, portal_key: Gd<PortalKey>) {
         let mut entrant = portal_key.bind().entrant_ancestor.clone().unwrap();
         if portal_key.bind().get_enabled() {
+            portal.bind_mut().open();
             entrant.dyn_bind_mut().entered_portal(&portal.bind());
         }
         // These signals only trigger when the areas are moving. Changing things like 'monitorable'
@@ -61,11 +54,12 @@ impl PortalSwallowArea {
         // solution for that with this and watch the enabling/disabling of PortalKeys while they
         // are inside the portal.
         let signal_fn = {
-            let portal = portal.clone();
             move |enabled: bool| {
                 if enabled {
+                    portal.bind_mut().open();
                     entrant.dyn_bind_mut().entered_portal(&portal.bind());
                 } else {
+                    portal.bind_mut().close();
                     entrant.dyn_bind_mut().exited_portal(&portal.bind());
                 }
             }
@@ -80,8 +74,9 @@ impl PortalSwallowArea {
         self.portal_key_signal_handles.insert(portal_key, handle);
     }
 
-    fn on_portal_key_exited(&mut self, portal: &Gd<Portal>, portal_key: Gd<PortalKey>) {
+    fn on_portal_key_exited(&mut self, mut portal: Gd<Portal>, portal_key: Gd<PortalKey>) {
         let mut entrant = portal_key.bind().entrant_ancestor.clone().unwrap();
+        portal.bind_mut().close();
         entrant.dyn_bind_mut().exited_portal(&portal.bind());
         self.portal_key_signal_handles.remove(&portal_key);
     }

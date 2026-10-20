@@ -9,10 +9,6 @@ _data = {
 }
 point_count = 7
 
-[sub_resource type="CapsuleShape2D" id="CapsuleShape2D_vh74b"]
-radius = 200.0
-height = 1216.0
-
 [node name="SceneGame" type="SceneGame" unique_id=741901120]
 
 [node name="Background" type="Sprite2D" parent="." unique_id=38236012]
@@ -60,34 +56,10 @@ one_shot = true
 position = Vector2(177, 435)
 scale = Vector2(0.5, 0.25)
 
-[node name="Area2D" type="PortalSwallowArea" parent="Portals/Left" unique_id=167487115]
-collision_layer = 0
-collision_mask = 4
-
-[node name="CollisionShape2D" type="CollisionShape2D" parent="Portals/Left/Area2D" unique_id=949485903]
-position = Vector2(4, -404)
-shape = SubResource("CapsuleShape2D_vh74b")
-
 [node name="Center" parent="Portals" unique_id=1327182884 instance=ExtResource("2_6ecnt")]
 position = Vector2(477, 434)
 scale = Vector2(0.5, 0.25)
 
-[node name="Area2D" type="PortalSwallowArea" parent="Portals/Center" unique_id=1838080725]
-collision_layer = 0
-collision_mask = 4
-
-[node name="CollisionShape2D" type="CollisionShape2D" parent="Portals/Center/Area2D" unique_id=435672773]
-position = Vector2(4, -404)
-shape = SubResource("CapsuleShape2D_vh74b")
-
 [node name="Right" parent="Portals" unique_id=842969871 instance=ExtResource("2_6ecnt")]
 position = Vector2(807, 435)
 scale = Vector2(0.5, 0.25)
-
-[node name="Area2D" type="PortalSwallowArea" parent="Portals/Right" unique_id=307221209]
-collision_layer = 0
-collision_mask = 4
-
-[node name="CollisionShape2D" type="CollisionShape2D" parent="Portals/Right/Area2D" unique_id=883986482]
-position = Vector2(4, -404)
-shape = SubResource("CapsuleShape2D_vh74b")

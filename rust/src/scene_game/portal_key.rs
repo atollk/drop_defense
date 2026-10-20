@@ -40,6 +40,11 @@ impl PortalKey {
 
     #[func]
     pub fn set_enabled(&mut self, value: bool) {
+        godot_print!(
+            "PortalKey.set_enabled = {}  - current = {}",
+            value,
+            self.get_enabled()
+        );
         if value == self.get_enabled() {
             return;
         }
