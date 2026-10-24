@@ -64,7 +64,6 @@ impl Portal {
     node_getter!(Sprite2D: Sprite2D);
 
     fn transform(&mut self, to_open: bool, duration: Duration) {
-        godot_print!("Portal.transform({})", to_open);
         // If we are already in the target state, or on the way there, do nothing.
         if (self.state == PortalState::Stable { is_open: to_open }
             || self.state
@@ -146,10 +145,6 @@ impl Portal {
                     let args: &[&Variant; 2] = args.as_array().unwrap();
                     let mut self_: Gd<Self> = args[0].to();
                     let to_open: bool = args[1].to();
-                    godot_print!(
-                        "set_portal_state {:?}",
-                        PortalState::Stable { is_open: to_open }
-                    );
                     self_.bind_mut().state = PortalState::Stable { is_open: to_open };
                 });
                 let callback = callback.bind(&[self.to_gd().to_variant(), to_open.to_variant()]);

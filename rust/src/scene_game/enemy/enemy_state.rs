@@ -6,7 +6,8 @@ pub enum EnemyState {
     Attacking,
     StandingUp,
     Dying,
-    Swallowed,
+    FallingIntoPortal,
+    SwallowedByPortal,
 }
 
 impl EnemyState {
@@ -18,7 +19,8 @@ impl EnemyState {
             EnemyState::Attacking => "Enemy/Attack",
             EnemyState::StandingUp => "Enemy/StandUp",
             EnemyState::Dying => "Enemy/Death",
-            EnemyState::Swallowed => "Enemy/Stand",
+            EnemyState::FallingIntoPortal => "Enemy/Stand",
+            EnemyState::SwallowedByPortal => "Enemy/Stand",
         }
     }
 
@@ -33,7 +35,10 @@ impl EnemyState {
     }
 
     pub const fn is_falling(&self) -> bool {
-        matches!(self, EnemyState::Falling | EnemyState::Swallowed)
+        matches!(
+            self,
+            EnemyState::Falling | EnemyState::SwallowedByPortal | EnemyState::FallingIntoPortal
+        )
     }
 
     pub const fn is_draggable(&self) -> bool {
@@ -43,6 +48,7 @@ impl EnemyState {
                 | EnemyState::Attacking
                 | EnemyState::StandingUp
                 | EnemyState::Falling
+                | EnemyState::FallingIntoPortal
         )
     }
 
@@ -51,6 +57,6 @@ impl EnemyState {
     }
 
     pub const fn is_portal_key(&self) -> bool {
-        matches!(self, EnemyState::Dragged)
+        matches!(self, EnemyState::Dragged | EnemyState::FallingIntoPortal)
     }
 }

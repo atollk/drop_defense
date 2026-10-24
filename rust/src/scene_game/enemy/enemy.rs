@@ -137,23 +137,24 @@ impl Enemy {
 
     /// A setter for `self.state` that makes sure the other invariants are updated correctly.
     fn set_state(&mut self, new_state: EnemyState) {
-        godot_print!("Enemy.set_state = {:?}", new_state);
         self.state = new_state;
+
+        // Falling into portal ?
+        let portal_is_fully_open = self
+            .inside_portal
+            .as_ref()
+            .map(|portal| portal.bind().get_state() == PortalState::Stable { is_open: true })
+            .unwrap_or(false);
+        if matches!(self.state, EnemyState::Falling) && portal_is_fully_open {
+            self.set_state(EnemyState::FallingIntoPortal);
+            return;
+        }
 
         // Draggable
         self.get_node_draggable().bind_mut().can_be_dragged = self.state.is_draggable();
 
         // Feet
-        let feet_enabled = self.state.is_portal_key()
-            || self
-                .inside_portal
-                .as_ref()
-                .map(|portal| portal.bind().get_state() == PortalState::Stable { is_open: true })
-                .unwrap_or(false);
-        godot_print!(
-            "Portal: {:?}",
-            self.inside_portal.as_ref().map(|p| p.bind().get_state())
-        );
+        let feet_enabled = self.state.is_portal_key();
         self.get_node_feet().bind_mut().set_enabled(feet_enabled);
 
         // Gravity
@@ -210,7 +211,7 @@ impl Enemy {
         self.progress = (offset / curve.get_baked_length()) as f64;
 
         let fall_damage = (self.base().get_global_position().y - self.fall_height) as f64;
-        if matches!(self.state, EnemyState::Swallowed) {
+        if matches!(self.state, EnemyState::SwallowedByPortal) {
             self.base_mut().queue_free();
         } else if fall_damage > self.health as f64 {
             self.set_state(EnemyState::Dying);
@@ -310,19 +311,18 @@ impl PortalEntrant for Enemy {
     }
 
     fn exited_portal(&mut self, portal: &Portal) {
-        if matches!(self.state, EnemyState::Swallowed) {
+        if matches!(self.state, EnemyState::SwallowedByPortal) {
             // if-check to prevent some annoying workaround logic when the signal gets emitted twice.
             return;
         }
 
-        let swallowed_by_portal =
-            self.is_falling_down() && portal.get_state() == PortalState::Stable { is_open: true };
+        let swallowed_by_portal = matches!(self.get_state(), EnemyState::FallingIntoPortal);
 
         if swallowed_by_portal {
             self.signals()
                 .swallowed_by_portal()
                 .emit(portal.portal_index);
-            self.set_state(EnemyState::Swallowed);
+            self.set_state(EnemyState::SwallowedByPortal);
         } else {
             self.inside_portal = None;
             self.get_node_enemy_sprite()
