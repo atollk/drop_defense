@@ -15,7 +15,7 @@ pub struct PortalKey {
 
     #[export]
     #[var(set, get)]
-    enabled: PhantomVar<bool>,
+    enabled: bool,
 
     base: Base<Node2D>,
 }
@@ -35,14 +35,15 @@ impl PortalKey {
 
     #[func]
     pub fn get_enabled(&self) -> bool {
-        self.get_node_area().is_monitorable()
+        self.enabled
     }
 
     #[func]
     pub fn set_enabled(&mut self, value: bool) {
-        if value == self.get_enabled() {
+        if self.get_enabled() == value {
             return;
         }
+        self.enabled = value;
         self.get_node_area()
             .set_deferred("monitorable", &value.to_variant());
         self.signals().enabled_changed().emit(value);
